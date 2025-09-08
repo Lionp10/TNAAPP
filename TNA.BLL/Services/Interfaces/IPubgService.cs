@@ -7,5 +7,7 @@ namespace TNA.BLL.Services.Interfaces
         Task<ClanDTO?> GetOrUpdateClanAsync(CancellationToken cancellationToken = default);
 
         Task UpdateStatisticsAsync(CancellationToken cancellationToken = default);
+
+        Task<string?> GetPlayerLifetimeStatsAsync(string playerId, CancellationToken cancellationToken = default);
     }
 }

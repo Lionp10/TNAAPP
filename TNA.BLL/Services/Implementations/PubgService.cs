@@ -360,6 +360,47 @@ namespace TNA.BLL.Services.Implementations
             _logger.LogInformation("UpdateStatisticsAsync completed.");
         }
 
+        // New: obtiene lifetime stats (raw JSON) para un jugador usando la ApiKey en servidor
+        public async Task<string?> GetPlayerLifetimeStatsAsync(string playerId, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(playerId))
+                return null;
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
+
+                var encodedPlayerId = WebUtility.UrlEncode(playerId);
+                var requestUrl = $"{_options.BaseUrl}/players/{encodedPlayerId}/seasons/lifetime?filter[gamepad]=false";
+                _logger.LogInformation("Requesting PUBG lifetime stats for player {PlayerId} at {Url}", playerId, requestUrl);
+
+                using var response = await client.GetAsync(requestUrl, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogWarning("PUBG lifetime API returned non-success for player {PlayerId}. Status: {StatusCode}. Body: {Body}",
+                        playerId, (int)response.StatusCode, body);
+                    return null;
+                }
+
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                return responseBody;
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "HTTP request failed when calling PUBG lifetime API for player {PlayerId}.", playerId);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error in GetPlayerLifetimeStatsAsync for player {PlayerId}.", playerId);
+                return null;
+            }
+        }
+
         // Ensure at least _playersRateInterval between consecutive /players requests.
         private async Task<HttpResponseMessage> SendPlayersRequestWithRateLimitAsync(HttpClient client, string url, CancellationToken cancellationToken)
         {

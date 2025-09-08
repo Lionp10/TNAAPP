@@ -219,6 +219,28 @@ body{
     backdrop-filter: blur(4px) saturate(120%);
 }
 
+.stats-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    border-radius: 10px;
+    color: #ffffff; /* iconos en blanco */
+    text-decoration: none;
+    transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+    background: linear-gradient(120deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15));
+    border: 1px solid rgba(255,255,255,0.03);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    font-size: 1.15rem;
+    backdrop-filter: blur(4px) saturate(120%);
+}
+
+.stats-link i {
+    color: #ffffff;
+    font-size: 0.90rem;
+}
+
 /* Forzar color blanco en el icono (Bootstrap Icons) */
 .social-link i{
     color: #ffffff;
@@ -227,7 +249,9 @@ body{
 
 /* Hover / focus states: sutil glow con color de marca */
 .social-link:hover,
-.social-link:focus{
+.social-link:focus,
+.stats-link:hover,
+.stats-link:focus {
     transform: translateY(-4px);
     outline: none;
     opacity: 1;

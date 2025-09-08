@@ -37,7 +37,16 @@
                                  alt="@m.Nickname"
                                  class="rounded-circle member-avatar" />
                             <div class="flex-grow-1">
-                                <div class="card-title">@m.Nickname</div>
+                                <div class="d-flex">
+                                    <div class="card-title">@m.Nickname</div>
+                                    <div>
+                                        @* botón ahora tiene data-playerid y data-playernick y clase para binding *@
+                                        <a class="stats-link btn-lifetime-stats" href="#" data-playerid="@m.PlayerId" data-playernick="@m.Nickname" title="Ver estadísticas lifetime">
+                                            <i class="bi bi-bar-chart-fill"></i>
+                                        </a>
+                                    </div>
+                                </div>
+
                                 <div class="glass-meta small">
                                     @if (!string.IsNullOrWhiteSpace(m.FirstName) || !string.IsNullOrWhiteSpace(m.LastName))
                                     {
@@ -80,3 +89,138 @@
         </div>
     }
 </section>
+
+@* Modal para mostrar lifetime stats *@
+<div class="modal fade" id="lifetimeModal" tabindex="-1" aria-labelledby="lifetimeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title" id="lifetimeModalLabel">Lifetime stats</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div id="lifetimeSpinner" class="d-flex justify-content-center my-4">
+                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+                </div>
+
+                <div id="lifetimeContent" style="display:none;">
+                    <div class="mb-3">
+                        <strong>Jugador:</strong> <span id="lifetimePlayerName"></span>
+                    </div>
+
+                    <div id="modesContainer" class="row g-3">
+                        <!-- Secciones por modo dinámicas -->
+                    </div>
+                </div>
+
+                <div id="lifetimeError" class="alert alert-danger d-none" role="alert"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function ($) {
+            $(function () {
+                var modalEl = document.getElementById('lifetimeModal');
+                var bsModal = new bootstrap.Modal(modalEl, {});
+
+                function renderModeCard(modeKey, data) {
+                    if (!data) {
+                        return '<div class="col-12"><div class="glass-card p-3">No hay datos para ' + modeKey + '.</div></div>';
+                    }
+
+                    // Campos relevantes a mostrar
+                    var wins = data.wins ?? 0;
+                    var kills = data.kills ?? 0;
+                    var damage = data.damageDealt ?? 0;
+                    var rounds = data.roundsPlayed ?? 0;
+                    var timeSurvived = data.timeSurvived ?? 0;
+                    var headshots = data.headshotKills ?? 0;
+                    var assists = data.assists ?? 0;
+                    var revives = data.revives ?? 0;
+                    var top10s = data.top10s ?? 0;
+
+                    var html =
+                        '<div class="col-12 col-md-6">' +
+                        '<div class="glass-card p-3">' +
+                        '<h6 class="mb-2 text-capitalize">' + modeKey.replace('-', ' ') + '</h6>' +
+                        '<div class="row">' +
+                        '<div class="col-6"><strong>Wins:</strong> ' + wins + '</div>' +
+                        '<div class="col-6"><strong>Kills:</strong> ' + kills + '</div>' +
+                        '<div class="col-6"><strong>Headshots:</strong> ' + headshots + '</div>' +
+                        '<div class="col-6"><strong>Assists:</strong> ' + assists + '</div>' +
+                        '<div class="col-6"><strong>Revives:</strong> ' + revives + '</div>' +
+                        '<div class="col-6"><strong>Top10s:</strong> ' + top10s + '</div>' +
+                        '<div class="col-6"><strong>Rounds:</strong> ' + rounds + '</div>' +
+                        '<div class="col-6"><strong>Damage:</strong> ' + damage + '</div>' +
+                        '<div class="col-12"><strong>TimeSurvived:</strong> ' + timeSurvived + '</div>' +
+                        '</div></div></div>';
+                    return html;
+                }
+
+                $('.btn-lifetime-stats').on('click', function (e) {
+                    e.preventDefault();
+                    var $btn = $(this);
+                    var playerId = $btn.data('playerid');
+                    var playerNick = $btn.data('playernick') || playerId;
+
+                    if (!playerId) return;
+
+                    $('#lifetimeModalLabel').text('Lifetime stats — ' + playerNick);
+                    $('#lifetimePlayerName').text(playerNick);
+                    $('#lifetimeError').addClass('d-none').text('');
+                    $('#lifetimeContent').hide();
+                    $('#modesContainer').empty();
+                    $('#lifetimeSpinner').show();
+
+                    bsModal.show();
+
+                    $.ajax({
+                        url: '@Url.Action("PlayerLifetimeStats", "Home")',
+                        method: 'GET',
+                        data: { playerId: playerId },
+                        dataType: 'json',
+                        success: function (resp) {
+                            $('#lifetimeSpinner').hide();
+
+                            try {
+                                var gm = resp && resp.data && resp.data.attributes && resp.data.attributes.gameModeStats ? resp.data.attributes.gameModeStats : null;
+                                if (!gm) {
+                                    $('#lifetimeError').removeClass('d-none').text('No se encontraron estadísticas para este jugador.');
+                                    return;
+                                }
+
+                                // Modos a mostrar: solo, duo, squad, solo-fpp, duo-fpp, squad-fpp
+                                var modes = ['solo', 'duo', 'squad', 'solo-fpp', 'duo-fpp', 'squad-fpp'];
+
+                                var html = '';
+                                modes.forEach(function (m) {
+                                    var entry = gm[m];
+                                    html += renderModeCard(m, entry);
+                                });
+
+                                $('#modesContainer').html(html);
+                                $('#lifetimeContent').show();
+                            } catch (ex) {
+                                $('#lifetimeError').removeClass('d-none').text('Error procesando la respuesta.');
+                            }
+                        },
+                        error: function (xhr, status, err) {
+                            $('#lifetimeSpinner').hide();
+                            var msg = 'Error al obtener datos.';
+                            if (xhr && xhr.responseText) {
+                                try { msg = JSON.parse(xhr.responseText).message || xhr.responseText; } catch (e) { msg = xhr.responseText; }
+                            }
+                            $('#lifetimeError').removeClass('d-none').text(msg);
+                        }
+                    });
+                });
+            });
+        })(jQuery);
+    </script>
+}
