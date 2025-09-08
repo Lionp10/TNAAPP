@@ -26,7 +26,7 @@ jobs:
       run: dotnet build --no-restore --configuration Release
       
     - name: Run TNA Statistics Update
-      run: dotnet run --project ./TNA.Schedule.csproj --configuration Release -- --run-once
+      run: dotnet run --project ./TNA.Scheduler/TNA.Scheduler.csproj --configuration Release -- --run-once
       env:
         # Variables de entorno desde GitHub Secrets
         ConnectionStrings__DefaultConnection: ${{ secrets.DATABASE_CONNECTION }}
