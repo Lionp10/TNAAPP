@@ -1,0 +1,35 @@
+name: Daily TNA Statistics Update
+
+on:
+  schedule:
+    # Ejecuta todos los días a las 8:00 AM UTC (5:00 AM GMT-3 como tienes configurado)
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Permite ejecutar manualmente para pruebas
+
+jobs:
+  update-statistics:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x' # Ajusta según tu versión de .NET
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build project
+      run: dotnet build --no-restore --configuration Release
+      
+    - name: Run TNA Statistics Update
+      run: dotnet run --project ./TNA.Schedule.csproj --configuration Release -- --run-once
+      env:
+        # Variables de entorno desde GitHub Secrets
+        ConnectionStrings__DefaultConnection: ${{ secrets.DATABASE_CONNECTION }}
+        Pubg__ApiKey: ${{ secrets.PUBG_API_KEY }}
+        Pubg__BaseUrl: "https://api.pubg.com/shards/steam"
+        Scheduler__DailyTime: "05:00"

@@ -1,0 +1,423 @@
+﻿/* Mejorando jerarquía visual y legibilidad del ranking */
+/* Variables mejoradas para mejor contraste y jerarquía */
+:root {
+    --accent-yellow: #ffc107;
+    --gold: #ffd700;
+    --silver: #c0c0c0;
+    --bronze: #cd7f32;
+    --primary-blue: #0ea5e9;
+    --success-green: #10b981;
+    --text-primary: #ffffff;
+    --text-secondary: #e2e8f0;
+    --text-muted: #94a3b8;
+    --bg-card: rgba(15, 23, 42, 0.8);
+    --bg-card-hover: rgba(30, 41, 59, 0.9);
+    --border-subtle: rgba(148, 163, 184, 0.1);
+}
+
+/* Contenedor principal */
+.podium-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+/* Grid del podio con mejor espaciado */
+.podium {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 1fr;
+    gap: 2rem;
+    align-items: end;
+    margin-bottom: 3rem;
+}
+
+/* Posicionamiento de elementos del podio */
+.podium-item {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+/* Tarjetas del podio con mejor diseño */
+.podium-card {
+    width: 100%;
+    max-width: 380px;
+    position: relative;
+    text-align: left;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px) saturate(120%);
+    transition: all 0.3s ease;
+}
+
+    .podium-card:hover {
+        background: var(--bg-card-hover);
+        transform: translateY(-4px);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    }
+
+/* Primer puesto más prominente con efectos especiales */
+.podium-first {
+    transform: translateY(-24px);
+    max-width: 420px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), var(--bg-card));
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 0 25px 50px rgba(255, 215, 0, 0.15), 0 0 30px rgba(255, 215, 0, 0.1);
+}
+
+    .podium-first:hover {
+        box-shadow: 0 30px 60px rgba(255, 215, 0, 0.2), 0 0 40px rgba(255, 215, 0, 0.15);
+    }
+
+/* Segundo y tercero con elevación sutil */
+.podium-2 .podium-card,
+.podium-3 .podium-card {
+    transform: translateY(8px);
+}
+
+/* Header mejorado con mejor distribución visual */
+.podium-card-header {
+    padding: 0;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+/* Pills de posición con colores distintivos y mejor tipografía */
+.place-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    height: 32px;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 1rem;
+    padding: 0 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    flex-shrink: 0;
+}
+
+/* Primer puesto - Oro */
+.place-gold {
+    background: linear-gradient(135deg, var(--gold), #ffa500);
+    color: #1a1a1a;
+    border: 2px solid rgba(255, 215, 0, 0.5);
+    box-shadow: 0 12px 30px rgba(255, 215, 0, 0.3);
+}
+
+/* Segundo puesto - Plata */
+.place-pill:not(.place-gold):not(.place-bronze) {
+    background: linear-gradient(135deg, var(--silver), #a8a8a8);
+    color: #1a1a1a;
+    border: 2px solid rgba(192, 192, 192, 0.5);
+    box-shadow: 0 8px 20px rgba(192, 192, 192, 0.2);
+}
+
+/* Tercer puesto - Bronce */
+.place-bronze {
+    background: linear-gradient(135deg, var(--bronze), #b8860b);
+    color: #ffffff;
+    border: 2px solid rgba(205, 127, 50, 0.5);
+    box-shadow: 0 8px 20px rgba(205, 127, 50, 0.2);
+}
+
+/* Nombres de jugadores más prominentes */
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin: 0;
+    flex: 1;
+}
+
+.podium-first .card-title {
+    font-size: 1.4rem;
+    background: linear-gradient(135deg, var(--gold), #ffa500);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Bloque de puntos más destacado */
+.points-block {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.points-label {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.points-value {
+    font-weight: 900;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.podium-first .points-value {
+    font-size: 1.75rem;
+    color: var(--gold);
+    text-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+/* Grid de estadísticas con mejor jerarquía visual */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem 1.5rem;
+    margin-top: 0;
+}
+
+/* Items de estadísticas con mejor legibilidad */
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+    .stat-item:last-child,
+    .stat-item:nth-last-child(2) {
+        border-bottom: none;
+    }
+
+    .stat-item strong {
+        font-weight: 900;
+        font-size: 1.1rem;
+        color: var(--text-primary);
+        line-height: 1;
+    }
+
+    .stat-item .stat-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+/* Tabla mejorada con mejor contraste y jerarquía */
+.table-responsive {
+    margin-top: 2rem;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.table {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 0;
+}
+
+    .table thead th {
+        background: rgba(15, 23, 42, 0.95);
+        color: var(--text-secondary);
+        font-weight: 700;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 1rem 0.75rem;
+        border-bottom: 2px solid var(--primary-blue);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    /* Agregando estilos específicos para tbody más oscuro */
+    .table tbody {
+        background: rgba(15, 23, 42, 0.9);
+        backdrop-filter: blur(8px);
+    }
+
+        .table tbody tr {
+            background: rgba(30, 41, 59, 0.6);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+            transition: all 0.3s ease;
+        }
+
+            .table tbody tr:hover {
+                background: rgba(51, 65, 85, 0.8);
+                transform: translateX(2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+
+            .table tbody tr:nth-child(even) {
+                background: rgba(15, 23, 42, 0.7);
+            }
+
+                .table tbody tr:nth-child(even):hover {
+                    background: rgba(51, 65, 85, 0.8);
+                }
+
+        .table tbody td {
+            padding: 0.875rem 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            vertical-align: middle;
+            border-color: rgba(148, 163, 184, 0.1);
+        }
+
+/* Responsive mejorado */
+@media (max-width: 880px) {
+    /* Cambiar a flex column para que order funcione y permitir reordenar el DOM para mobile */
+    .podium {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        align-items: stretch;
+    }
+
+    /* Orden explícito sobre los hijos directos (.podium-item) */
+    .podium-item.podium-1 { order: 0; } /* primero */
+    .podium-item.podium-2 { order: 1; } /* segundo */
+    .podium-item.podium-3 { order: 2; } /* tercero */
+
+    /* Mantener estilos visuales de la tarjeta destacada */
+    .podium-first {
+        transform: none;
+        max-width: none;
+        /* no usamos order aquí porque .podium-first está en la tarjeta interna,
+           el order debe aplicarse sobre .podium-item (hijos directos) */
+    }
+
+    .podium-2 .podium-card,
+    .podium-3 .podium-card {
+        transform: none;
+    }
+
+    .place-pill {
+        min-width: 44px;
+        height: 30px;
+        font-size: 0.95rem;
+    }
+
+    .card-title {
+        font-size: 1.1rem;
+    }
+
+    .podium-first .card-title {
+        font-size: 1.25rem;
+    }
+
+    .points-value {
+        font-size: 1.25rem;
+    }
+
+    .podium-first .points-value {
+        font-size: 1.5rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+
+    .table thead th,
+    .table tbody td {
+        padding: 0.5rem 0.375rem;
+    }
+}
+
+
+/* Tabla mejorada con mejor contraste y jerarquía */
+.table-responsive {
+    margin-top: 2rem;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.table {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 0;
+}
+
+    .table thead th {
+        background: rgba(15, 23, 42, 0.95);
+        color: var(--text-secondary);
+        font-weight: 700;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 1rem 0.75rem;
+        border-bottom: 2px solid var(--primary-blue);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    /* Estilos específicos para tbody más oscuro y acorde al sistema */
+    .table tbody {
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(8px);
+    }
+
+        .table tbody tr {
+            background: rgba(15, 23, 42, 0.95);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+            transition: all 0.3s ease;
+        }
+
+            .table tbody tr:hover {
+                background: rgba(51, 65, 85, 0.9);
+                transform: translateX(2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+
+            .table tbody tr:nth-child(even) {
+                background: rgba(15, 23, 42, 0.8);
+            }
+
+                .table tbody tr:nth-child(even):hover {
+                    background: rgba(51, 65, 85, 0.9);
+                }
+
+        .table tbody td {
+            background: rgba(15, 23, 42, 0.95);
+            padding: 0.875rem 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            vertical-align: middle;
+            border-color: rgba(148, 163, 184, 0.1);
+        }
+
+            /* Resaltando la posición (primera columna) */
+            .table tbody td:first-child {
+                
+                font-weight: 800;
+                font-size: 1.1rem;
+                
+                
+            }
+
+            /* Resaltando los puntos (última columna) */
+            .table tbody td:last-child {
+                color: var(--primary-blue);
+                font-weight: 800;
+                font-size: 1.05rem;
+                background: rgba(0, 0, 0, 0.3);
+                
+            }
+

@@ -1,0 +1,47 @@
+﻿@{
+    ViewData["Title"] = "Torneos";
+}
+
+@section Hero {
+    <header class="hero tournaments-hero mt-5">
+        <div class="hero-overlay"></div>
+        <div class="container hero-content">
+            <div class="row align-items-center justify-content-center">
+                <div class="col-12 d-flex justify-content-center gap-4 mb-3">
+                    <img src="@(Url.Content("~/images/ElPantera.webp"))" alt="El Pantera" class="hero-illustration tournament-img" />
+                    <img src="@(Url.Content("~/images/TNACup_Logo.webp"))" alt="TNA Cup" class="hero-illustration tournament-img" />
+                </div>
+
+                <div class="col-12 text-center">
+                    <h1 class="hero-title mb-2">¡Proximamente!</h1>
+                    <p class="hero-sub">Estamos trabajando en esto</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <style>
+        /* Ajustes específicos para la sección Tournaments (mantiene estética del sitio) */
+        .tournaments-hero .tournament-img {
+            width: 140px;
+            max-width: 32%;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 18px rgba(0,0,0,0.45));
+        }
+
+        @@media (max-width: 576px) {
+            .tournaments-hero .tournament-img {
+                width: 96px;
+                max-width: 40%;
+            }
+            .tournaments-hero .hero-title { font-size: 1.4rem; }
+        }
+    </style>
+}
+
+<section class="container py-4">
+    <div class="glass-card">
+        <p class="mb-0">Más información sobre próximos torneos estará disponible pronto.</p>
+    </div>
+</section>

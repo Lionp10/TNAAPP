@@ -1,0 +1,200 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+@{
+    string IsActivePath(string startsWith)
+    {
+        var path = Context.Request.Path.Value ?? "/";
+        
+        // caso raíz: sólo activo si la ruta es exactamente "/"
+        if (startsWith == "/")
+        {
+            return path == "/" ? "active" : "";
+        }
+
+        // normaliza el token (permite pasar "Members" o "/Members")
+        if (!startsWith.StartsWith("/")) startsWith = "/" + startsWith;
+
+        // activo si la ruta empieza por el token (ej. "/Members/.."),
+        // o si termina con el token (ej. "/Home/Members"), o es exactamente igual
+        if (path.Equals(startsWith, StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith(startsWith + "/", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(startsWith, StringComparison.OrdinalIgnoreCase)
+            || path.IndexOf(startsWith, StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            return "active";
+        }
+
+        return "";
+    }
+}
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="~/favicontna.ico" type="image/x-icon">
+    <title>@ViewData["Title"] - TNA ESPORT</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link href="~/css/stats.css" rel="stylesheet" />
+
+    <style>
+        /* Hero: imagen ilustración responsiva */
+        .hero-illustration {
+            width: 100%;
+            max-width: 220px;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 24px rgba(0,0,0,0.5));
+            transition: transform .18s ease;
+        }
+
+        /* Aumentar tamaño en pantallas grandes */
+        @@media (min-width: 992px) {
+            .hero-illustration
+
+        {
+            max-width: 240px; /* ajusta según gusto */
+        }
+
+        }
+
+        /* Opcional: efecto hover ligero en escritorio */
+        @@media (hover: hover) {
+            .hero-illustration:hover
+
+        {
+            transform: translateY(-4px);
+        }
+
+        }
+    </style>
+
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg site-navbar fixed-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="~/">
+                <img src="~/images/TNAESPORT_Logo.webp" onerror="this.src='~/favicontna.ico';" alt="TNA" class="brand-logo" />
+                <div class="brand-text-wrap">
+                    <span class="brand-text">TNA</span>
+                    <small class="brand-sub">E-SPORT</small>
+                </div>
+            </a>
+
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-end" id="mainNav">
+                <ul class="navbar-nav align-items-lg-center">
+                    <li class="nav-item">
+                        <a class="nav-link @IsActivePath("/")" href="~/">
+                            Inicio
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @IsActivePath("/Members")" href="@Url.Action("Members", "Home")">
+                            Miembros
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @IsActivePath("/Tournaments")" href="@Url.Action("Tournaments", "Home")">
+                            Torneos
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    @* Hero: cada vista puede sobrescribir con @section Hero { ... } *@
+    @if (IsSectionDefined("Hero"))
+    {
+        @RenderSection("Hero")
+    }
+    else
+    {
+        <header class="hero">
+            <div class="hero-overlay"></div>
+            <div class="container hero-content">
+                <div class="row">
+                    <div class="col-lg-8 d-flex flex-column justify-content-center">
+                        <h1 class="hero-title">Juega con nosotros</h1>
+                        <p class="hero-sub">Forma parte del clan, conoce nuevos jugadores y participa en torneos exclusivos.</p>
+                        <div class="mt-4">
+                            <a href="https://discord.gg/ebYXx7F2g2" target="_blank" class="btn btn-accent me-2"><i class="bi bi-discord"></i> Entrar al Discord</a>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 d-flex justify-content-center align-items-center">
+                        <img src="~/images/ElPantera.webp" alt="El Pantera" class="hero-illustration" />
+                    </div>
+                </div>
+            </div>
+        </header>
+    }
+
+    <main class="content-wrapper">
+        @RenderBody()
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                    <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2">
+                        <img src="~/images/TNAESPORT_Logo.webp" onerror="this.src='~/favicontna.ico';" alt="TNA" class="footer-logo" />
+                        <div class="brand-text-wrap">
+                            <span class="brand-text">TNA</span>
+                            <small class="brand-sub">E-SPORT</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 text-center text-md-end">
+                    <div class="social-icons d-inline-flex align-items-center" role="list">
+                        <!-- Reemplaza los href="#" por las URLs reales de tus redes -->
+                        <a class="social-link instagram" href="https://www.instagram.com/tnaesport/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" role="listitem">
+                            <i class="bi bi-instagram"></i>
+                        </a>
+                        <a class="social-link discord ms-2" href="https://discord.gg/ebYXx7F2g2" target="_blank" rel="noopener noreferrer" aria-label="Discord" role="listitem">
+                            <i class="bi bi-discord"></i>
+                        </a>
+                        <a class="social-link youtube ms-2" href="https://www.youtube.com/@@tnae-sport2459" target="_blank" rel="noopener noreferrer" aria-label="YouTube" role="listitem">
+                            <i class="bi bi-youtube"></i>
+                        </a>
+                    </div>
+
+                    <div class="small text-muted mt-2">© @DateTime.Now.Year TNA ESPORT — Todos los derechos reservados</div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+
+    <script>
+        (function () {
+            var nav = document.querySelector('.site-navbar');
+            function onScroll() {
+                if (!nav) return;
+                if (window.scrollY > 10) nav.classList.add('scrolled');
+                else nav.classList.remove('scrolled');
+            }
+            document.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+        })();
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,318 @@
+﻿@using TNA.BLL.DTOs
+@model TNA.APP.Models.HomeIndexViewModel
+
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+
+
+<div class="container mt-4" id="rankings">
+    <div class="mb-5 d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="hero-title">Estadísticas del clan</h1>
+            <p class="hero-sub">Visualiza el rendimiento de los miembros: partidas, kills, daño y puntos de ranking.</p>
+        </div>
+
+        <div>
+            <form id="filterForm" asp-action="Index" method="get" class="d-inline">
+                <div class="input-group">
+                    <select name="range" class="form-select" id="ddlPeriod">
+                        @foreach (var item in Model.Ranges)
+                        {
+                            <option value="@item.Value" selected="@(item.Value == Model.SelectedRange ? "selected" : null)">@item.Text</option>
+                        }
+                    </select>
+                    <noscript>
+                        <button type="submit" class="btn btn-outline-secondary">Filtrar</button>
+                    </noscript>
+                </div>
+            </form>
+            <div class="small text-muted mt-1">
+                Rango seleccionado: <strong>@Model.RangeDisplay</strong>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Rankings == null || !Model.Rankings.Any())
+    {
+        <div class="alert alert-info">No hay datos para el rango seleccionado.</div>
+    }
+    else
+    {
+        // Variables C# dentro del bloque else (sin usar @{})
+        var top = Model.Rankings.Take(3).ToList();
+        var first = top.Count > 0 ? top.ElementAtOrDefault(0) : null;
+        var second = top.Count > 1 ? top.ElementAtOrDefault(1) : null;
+        var third = top.Count > 2 ? top.ElementAtOrDefault(2) : null;
+        var start = 3;
+        var end = Math.Min(Model.Rankings.Count, 23);
+
+        <div class="podium-wrap mb-4">
+            <div class="podium">
+                @* Segundo - izquierda *@
+                <div class="podium-item podium-2">
+                    @if (second != null)
+                    {
+                        <div class="glass-card podium-card">
+                            <div class="podium-card-header">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="place-pill">#2</span>
+                                    <div class="card-title">@(!string.IsNullOrEmpty(second.PlayerNickname) ? second.PlayerNickname : "Jugador")</div>
+                                </div>
+
+                                <div class="points-block">
+                                    <div class="points-label">Puntos</div>
+                                    <div class="points-value">@second.TotalPoints.ToString("F2")</div>
+                                </div>
+                            </div>
+
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <strong>@second.MatchesCount</strong>
+                                    <span class="stat-label">Partidas</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@second.TotalKills</strong>
+                                    <span class="stat-label">Kills</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@second.TotalDBNOs</strong>
+                                    <span class="stat-label">Derribos</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@second.TotalHeadshotsKills</strong>
+                                    <span class="stat-label">Headshots</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@second.TotalAssists</strong>
+                                    <span class="stat-label">Asistencias</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@second.TotalDamageDealt</strong>
+                                    <span class="stat-label">Daño</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@second.TotalRevives</strong>
+                                    <span class="stat-label">Revives</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@second.TotalTeamKill</strong>
+                                    <span class="stat-label">Team kills</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@second.TotalTimeSurvivedFormatted</strong>
+                                    <span class="stat-label">Tiempo de juego</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@second.AverageWinPlace</strong>
+                                    <span class="stat-label">Posición promedio</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* Primero - centro (más grande y destacado) *@
+                <div class="podium-item podium-1">
+                    @if (first != null)
+                    {
+                        <div class="glass-card podium-card podium-first">
+                            <div class="podium-card-header">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="place-pill place-gold">#1</span>
+                                    <div class="card-title">@(!string.IsNullOrEmpty(first.PlayerNickname) ? first.PlayerNickname : "Jugador")</div>
+                                </div>
+
+                                <div class="points-block">
+                                    <div class="points-label">Puntos</div>
+                                    <div class="points-value">@first.TotalPoints.ToString("F2")</div>
+                                </div>
+                            </div>
+
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <strong>@first.MatchesCount</strong>
+                                    <span class="stat-label">Partidas</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@first.TotalKills</strong>
+                                    <span class="stat-label">Kills</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@first.TotalDBNOs</strong>
+                                    <span class="stat-label">Derribos</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@first.TotalHeadshotsKills</strong>
+                                    <span class="stat-label">Headshots</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@first.TotalAssists</strong>
+                                    <span class="stat-label">Asistencias</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@first.TotalDamageDealt</strong>
+                                    <span class="stat-label">Daño</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@first.TotalRevives</strong>
+                                    <span class="stat-label">Revives</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@first.TotalTeamKill</strong>
+                                    <span class="stat-label">Team kills</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@first.TotalTimeSurvivedFormatted</strong>
+                                    <span class="stat-label">Tiempo de juego</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@first.AverageWinPlace</strong>
+                                    <span class="stat-label">Posición promedio</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* Tercero - derecha *@
+                <div class="podium-item podium-3">
+                    @if (third != null)
+                    {
+                        <div class="glass-card podium-card">
+                            <div class="podium-card-header">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="place-pill place-bronze">#3</span>
+                                    <div class="card-title">@(!string.IsNullOrEmpty(third.PlayerNickname) ? third.PlayerNickname : "Jugador")</div>
+                                </div>
+
+                                <div class="points-block">
+                                    <div class="points-label">Puntos</div>
+                                    <div class="points-value">@third.TotalPoints.ToString("F2")</div>
+                                </div>
+                            </div>
+
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <strong>@third.MatchesCount</strong>
+                                    <span class="stat-label">Partidas</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@third.TotalKills</strong>
+                                    <span class="stat-label">Kills</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@third.TotalDBNOs</strong>
+                                    <span class="stat-label">Derribos</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@third.TotalHeadshotsKills</strong>
+                                    <span class="stat-label">Headshots</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@third.TotalAssists</strong>
+                                    <span class="stat-label">Asistencias</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@third.TotalDamageDealt</strong>
+                                    <span class="stat-label">Daño</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@third.TotalRevives</strong>
+                                    <span class="stat-label">Revives</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@third.TotalTeamKill</strong>
+                                    <span class="stat-label">Team kills</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@third.TotalTimeSurvivedFormatted</strong>
+                                    <span class="stat-label">Tiempo de juego</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>@third.AverageWinPlace</strong>
+                                    <span class="stat-label">Posición promedio</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* Tabla: desde 4º hasta 23º *@
+        @if (Model.Rankings.Count > start)
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-sm table-custom-blue">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Jugador</th>
+                            <th>Partidas</th>
+                            <th>Derribos</th>
+                            <th>Asistencias</th>
+                            <th>Kills</th>
+                            <th>Headshots</th>
+                            <th>Daño</th>
+                            <th>Revives</th>
+                            <th>Team kills</th>
+                            <th>Tiempo de juego</th>
+                            <th>Posición promedio</th>
+                            <th>Puntos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = start; i < end; i++)
+                        {
+                            var r = Model.Rankings[i];
+                            <tr>
+                                <td>@(i + 1)</td>
+                                <td>@(string.IsNullOrEmpty(r.PlayerNickname) ? "-" : r.PlayerNickname)</td>
+                                <td>@r.MatchesCount</td>
+                                <td>@r.TotalDBNOs</td>
+                                <td>@r.TotalAssists</td>
+                                <td>@r.TotalKills</td>
+                                <td>@r.TotalHeadshotsKills</td>
+                                <td>@r.TotalDamageDealt</td>
+                                <td>@r.TotalRevives</td>
+                                <td>@r.TotalTeamKill</td>
+                                <td>@r.TotalTimeSurvivedFormatted</td>
+                                <td>@r.AverageWinPlace</td>
+                                <td>@r.TotalPoints.ToString("F2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function ($) {
+            $(function () {
+                // Enviar el formulario añadiendo fragmento para que el navegador vuelva al ancla
+                $('#ddlPeriod').on('change', function (e) {
+                    var $form = $('#filterForm');
+                    // limpiar hash si ya existe
+                    var action = ($form.attr('action') || window.location.pathname).split('#')[0];
+                    // anexar fragmento que coincide con el id del contenedor
+                    $form.attr('action', action + '#rankings');
+                    $form.submit();
+                });
+
+                // ... tu código existente de actualización manual (si ya lo tienes)
+                var $formUpdate = $('#formUpdateStats');
+                var $btn = $('#btnUpdateStats');
+                var $overlay = $('#loadingOverlay');
+
+                if ($formUpdate.length && $btn.length) {
+                    // (la lógica que ya tenías para update statistics)
+                }
+            });
+        })(jQuery);
+    </script>
+}

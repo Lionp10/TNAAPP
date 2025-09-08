@@ -1,0 +1,315 @@
+/* Reset ligero */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Variables de color (ajustables) */
+:root{
+    --bg-900: #030406;
+    --bg-800: #0b0f12;
+    --brand: #00A6E6;    /* cian/azul del logo */
+    --brand-dark: #0079B0;
+    --muted: #9fb6c6;
+    --text: #e6f2f8;
+    --glass-opa: 0.14;
+}
+
+/* Tipografía y base */
+body{
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: var(--bg-900);
+    color: var(--text);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    line-height:1.45;
+}
+
+/* NAVBAR */
+.site-navbar{
+    background: transparent;
+    padding: .8rem 0;
+    transition: all 220ms ease;
+}
+.site-navbar.scrolled{
+    background: linear-gradient(180deg, rgba(2,6,10,0.88), rgba(2,6,10,0.75));
+    box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+    padding: .45rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.site-navbar .brand-logo{
+    height:44px;
+    width:auto;
+    object-fit:contain;
+    filter: drop-shadow(0 6px 18px rgba(0,0,0,0.6));
+}
+.brand-text-wrap { display:flex; flex-direction:column; line-height:1; }
+.brand-text { font-weight:700; color:var(--text); letter-spacing:1px; font-size:1.05rem; }
+.brand-sub { font-size:0.65rem; color:var(--muted); margin-top:-4px; }
+
+/* Links */
+.site-navbar .nav-link{
+    color:var(--muted);
+    margin: 0 .25rem;
+    padding: .35rem .6rem;
+    border-radius:6px;
+    transition: all 140ms ease;
+    font-weight:600;
+}
+.site-navbar .nav-link:hover{ color:var(--text); background: rgba(255,255,255,0.02); text-decoration:none; }
+.site-navbar .nav-link.active{
+    color:var(--text);
+    position:relative;
+}
+.site-navbar .nav-link.active::after{
+    content: "";
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -10px;
+    width: 36px;
+    height: 3px;
+    background: linear-gradient(90deg,var(--brand),var(--brand-dark));
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0,166,230,0.08);
+}
+
+/* HERO (full bleed) */
+.hero{
+    position: relative;
+    background-image: url('/images/hero-bg.jpg');
+    background-size: cover;
+    background-position: center center;
+    min-height: 420px;
+    display:flex;
+    align-items:center;
+    color:var(--text);
+}
+.hero-overlay{
+    position:absolute;
+    inset:0;
+    background: linear-gradient(180deg, rgba(3,6,9,0.65), rgba(3,6,9,0.65));
+    backdrop-filter: blur(3px) saturate(120%);
+    opacity: 1;
+}
+.hero-content{
+    position: relative;
+    z-index: 2;
+    padding: 4rem 0;
+}
+.hero-title{
+    font-size: clamp(1.8rem, 3.6vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: .6rem;
+    text-shadow: 0 6px 30px rgba(0,0,0,0.6);
+}
+.hero-sub{
+    color: var(--muted);
+    font-size: 1.05rem;
+}
+
+
+/* Reusable "glass" card para estadísticas/torneos */
+.glass-card{
+    background: linear-gradient(180deg, rgba(7,10,12,var(--glass-opa)), rgba(11,14,16,0.06));
+    border: 1px solid rgba(255,255,255,0.04);
+    padding: 1.2rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(2,6,10,0.6);
+    backdrop-filter: blur(6px) saturate(120%);
+    color: var(--text);
+}
+.glass-card .card-title{
+    font-weight:700;
+    margin-bottom:.6rem;
+}
+.glass-meta{
+    color:var(--muted);
+    font-size:0.95rem;
+}
+
+/* Grid para tarjetas (reutilizable) */
+.card-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+    margin-top:1.25rem;
+}
+
+/* Badges y acentos */
+.badge-accent {
+    display:inline-block;
+    padding:.25rem .6rem;
+    background: linear-gradient(90deg, var(--brand), var(--brand-dark));
+    color: white;
+    border-radius: 999px;
+    font-weight:700;
+    box-shadow: 0 6px 14px rgba(0,166,230,0.12);
+}
+
+/* Botones */
+.btn-accent{
+    background: linear-gradient(90deg, var(--brand), var(--brand-dark));
+    border: none;
+    color: white;
+    box-shadow: 0 8px 22px rgba(0,166,230,0.12);
+    padding: .6rem 1.05rem;
+    border-radius: 10px;
+    font-weight:700;
+}
+.btn-accent:hover{ filter: brightness(0.98); }
+.btn-outline-light{
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.06);
+    background: transparent;
+    padding: .55rem .95rem;
+    border-radius: 10px;
+}
+
+/* Contenido principal */
+.content-wrapper{
+    padding: 3.5rem 1.25rem 2.5rem; /* deja espacio para navbar fixed */
+    min-height: calc(100vh - 160px);
+}
+
+.table td, .table th {
+    vertical-align: middle;
+    color: #dbeff9;
+}
+
+/* Footer: estilos modernos y sociales */
+.site-footer{
+    padding: 1.25rem 0;
+    color: var(--muted);
+    background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.01));
+    border-top: 1px solid rgba(255,255,255,0.02);
+    font-size: 0.95rem;
+}
+
+/* Logo pequeño en footer */
+.footer-logo{
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 18px rgba(0,0,0,0.5));
+}
+
+/* Contenedor de iconos sociales */
+.social-icons{
+    gap: 0.5rem;
+}
+
+/* Enlaces sociales: fondo uniforme que combina con el sitio y icono blanco */
+.social-link{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    color: #ffffff; /* iconos en blanco */
+    text-decoration: none;
+    transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+    background: linear-gradient(120deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15));
+    border: 1px solid rgba(255,255,255,0.03);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    font-size: 1.15rem;
+    backdrop-filter: blur(4px) saturate(120%);
+}
+
+/* Forzar color blanco en el icono (Bootstrap Icons) */
+.social-link i{
+    color: #ffffff;
+    font-size: 1.05rem;
+}
+
+/* Hover / focus states: sutil glow con color de marca */
+.social-link:hover,
+.social-link:focus{
+    transform: translateY(-4px);
+    outline: none;
+    opacity: 1;
+}
+
+/* Mantener clases específicas por red (por si quieres iconos distintos en el futuro),
+   pero todas comparten el mismo aspecto para no romper el diseño. */
+.social-link.instagram,
+.social-link.discord,
+.social-link.youtube {
+    /* placeholder: intencionalmente igual para mantener coherencia visual */
+    background: linear-gradient(120deg, rgba(255,255,255,0.02), rgba(0,0,0,0.15));
+    border: 1px solid rgba(255,255,255,0.03);
+}
+
+/* Avatar de miembro: controla recorte y posición de la cara */
+.member-avatar {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;           /* mantiene proporción y recorta los bordes */
+    object-position: center 22%; /* ajustar este valor hasta que la cara aparezca completa */
+    border: 1px solid rgba(255,255,255,0.04);
+    display: inline-block;
+}
+
+/* Versiones responsive si quieres avatar más grande en pantallas grandes */
+@media (min-width: 992px) {
+    .member-avatar { width: 72px; height: 72px; object-position: center 20%; }
+}
+
+/* Ajustes responsive */
+@media (max-width: 575px){
+    .site-footer .row { text-align: center; }
+    .site-footer .col-md-6 { margin-bottom: .5rem; }
+    .social-link { width: 40px; height: 40px; font-size: 1rem; }
+}
+@media (max-width: 991px){
+    .hero { min-height: 360px; }
+    .hero-content { padding: 3rem 0; }
+}
+@media (max-width: 767px){
+    .brand-text { font-size: .95rem; }
+    .content-wrapper { padding-top: 7.5rem; }
+    .hero-title { font-size: 1.6rem; }
+    .brand-sub { display:none; }
+
+    /* --- Ajustes para mobile: centrar texto/button y añadir mt-5 al row --- */
+    /* mt-5 en Bootstrap = 3rem */
+    .hero .row {
+        margin-top: 5rem; /* equivalente a mt-5 */
+    }
+
+    /* Centrar el contenido del column izquierdo (h1, párrafo, botón) */
+    .hero .col-lg-8 {
+        display: flex;             /* conserva el comportamiento existente */
+        flex-direction: column;
+        justify-content: center;   /* ya estaba */
+        align-items: center;       /* centra horizontalmente los hijos (h1, p, botón) */
+        text-align: center;        /* centra texto */
+    }
+
+    /* Asegurar que el contenedor del botón centre correctamente */
+    .hero .col-lg-8 > .mt-4 {
+        display: flex;
+        justify-content: center;
+        gap: .5rem;
+        width: 100%;
+    }
+
+    /* Espacio extra arriba para la ilustración cuando se apile debajo */
+    .hero .col-lg-4 {
+        margin-top: 1.5rem;
+    }
+}
+
+/* Tabla td/th */
+@media (max-width: 767px){
+    /* mantener compatibilidad con reglas previas si se repiten */
+}
+
+/* Ajustes adicionales */
+@media (max-width: 575px){
+    /* Si quieres aumentar el espacio en móviles muy pequeños, ajusta aquí */
+    .hero .row { margin-top: 3.5rem; }
+}
