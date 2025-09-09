@@ -1,0 +1,252 @@
+﻿/* Solución completa para tabla responsive con header fijo */
+.table-container {
+    position: relative;
+    margin-top: 2rem;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+}
+
+/* Wrapper para scroll horizontal */
+.table-scroll-wrapper {
+    overflow-x: auto;
+    overflow-y: visible;
+    max-height: 70vh; /* Altura máxima para permitir scroll vertical */
+    position: relative;
+}
+
+    /* Estilos para la scrollbar horizontal en webkit */
+    .table-scroll-wrapper::-webkit-scrollbar {
+        height: 8px;
+    }
+
+    .table-scroll-wrapper::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.5);
+        border-radius: 4px;
+    }
+
+    .table-scroll-wrapper::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.3);
+        border-radius: 4px;
+    }
+
+        .table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.5);
+        }
+
+/* Tabla con ancho mínimo para evitar compresión */
+.responsive-table {
+    min-width: 1200px; /* Ancho mínimo para mostrar todas las columnas */
+    margin-bottom: 0;
+    background: transparent;
+}
+
+    /* Header fijo con z-index alto */
+    .responsive-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(15, 23, 42, 0.98);
+        color: var(--text-secondary);
+        font-weight: 700;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 1rem 0.75rem;
+        border-bottom: 2px solid var(--primary-blue);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Cuerpo de la tabla */
+    .responsive-table tbody {
+        background: rgba(15, 23, 42, 0.95);
+    }
+
+        .responsive-table tbody tr {
+            background: rgba(15, 23, 42, 0.95);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+            transition: all 0.3s ease;
+        }
+
+            .responsive-table tbody tr:hover {
+                background: rgba(51, 65, 85, 0.9);
+                transform: translateX(2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+
+            .responsive-table tbody tr:nth-child(even) {
+                background: rgba(15, 23, 42, 0.8);
+            }
+
+                .responsive-table tbody tr:nth-child(even):hover {
+                    background: rgba(51, 65, 85, 0.9);
+                }
+
+        .responsive-table tbody td {
+            padding: 0.875rem 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            vertical-align: middle;
+            border-color: rgba(148, 163, 184, 0.1);
+            white-space: nowrap; /* Evita que el texto se corte */
+        }
+
+    /* Columnas específicas con anchos mínimos */
+    .responsive-table th:first-child,
+    .responsive-table td:first-child {
+        min-width: 60px; /* Posición */
+        text-align: center;
+    }
+
+    .responsive-table th:nth-child(2),
+    .responsive-table td:nth-child(2) {
+        min-width: 120px; /* Jugador */
+        font-weight: 600;
+    }
+
+    .responsive-table th:nth-child(3),
+    .responsive-table td:nth-child(3) {
+        min-width: 80px; /* Partidas */
+        text-align: center;
+    }
+
+    .responsive-table th:nth-child(4),
+    .responsive-table td:nth-child(4) {
+        min-width: 90px; /* Derribos */
+        text-align: center;
+    }
+
+    .responsive-table th:nth-child(5),
+    .responsive-table td:nth-child(5) {
+        min-width: 100px; /* Asistencias */
+        text-align: center;
+    }
+
+    .responsive-table th:nth-child(6),
+    .responsive-table td:nth-child(6) {
+        min-width: 70px; /* Kills */
+        text-align: center;
+    }
+
+    .responsive-table th:nth-child(7),
+    .responsive-table td:nth-child(7) {
+        min-width: 90px; /* Headshots */
+        text-align: center;
+    }
+
+    .responsive-table th:nth-child(8),
+    .responsive-table td:nth-child(8) {
+        min-width: 80px; /* Daño */
+        text-align: center;
+    }
+
+    .responsive-table th:nth-child(9),
+    .responsive-table td:nth-child(9) {
+        min-width: 80px; /* Revives */
+        text-align: center;
+    }
+
+    .responsive-table th:nth-child(10),
+    .responsive-table td:nth-child(10) {
+        min-width: 90px; /* Team kills */
+        text-align: center;
+    }
+
+    .responsive-table th:nth-child(11),
+    .responsive-table td:nth-child(11) {
+        min-width: 120px; /* Tiempo de juego */
+        text-align: center;
+    }
+
+    .responsive-table th:nth-child(12),
+    .responsive-table td:nth-child(12) {
+        min-width: 110px; /* Posición promedio */
+        text-align: center;
+    }
+
+    .responsive-table th:nth-child(13),
+    .responsive-table td:nth-child(13) {
+        min-width: 90px; /* Puntos */
+        text-align: center;
+        font-weight: 700;
+        color: var(--primary-blue);
+    }
+
+/* Indicador de scroll horizontal para móviles */
+.scroll-indicator {
+    display: none;
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    z-index: 50;
+    animation: fadeInOut 3s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0%, 100% {
+        opacity: 0;
+    }
+
+    20%, 80% {
+        opacity: 1;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .table-container {
+        margin: 1rem -15px 0; /* Extend to screen edges on mobile */
+        border-radius: 0;
+    }
+
+    .table-scroll-wrapper {
+        max-height: 60vh;
+    }
+
+    .responsive-table {
+        min-width: 1000px; /* Slightly smaller on mobile but still showing all data */
+        font-size: 0.875rem;
+    }
+
+        .responsive-table thead th,
+        .responsive-table tbody td {
+            padding: 0.6rem 0.5rem;
+        }
+
+    .scroll-indicator {
+        display: block;
+    }
+}
+
+@media (max-width: 480px) {
+    .responsive-table {
+        font-size: 0.8rem;
+    }
+
+        .responsive-table thead th,
+        .responsive-table tbody td {
+            padding: 0.5rem 0.4rem;
+        }
+}
+
+/* Mejora para el primer y último elemento visible */
+.responsive-table tbody td:first-child {
+    font-weight: 800;
+    font-size: 1.1rem;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.responsive-table tbody td:last-child {
+    color: var(--primary-blue);
+    font-weight: 800;
+    font-size: 1.05rem;
+    background: rgba(0, 0, 0, 0.3);
+}

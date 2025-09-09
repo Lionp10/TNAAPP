@@ -241,50 +241,55 @@
             </div>
         </div>
 
-        @* Tabla: desde 4º hasta 23º *@
+        @* Tabla mejorada con responsive y header fijo *@
         @if (Model.Rankings.Count > start)
         {
-            <div class="table-responsive">
-                <table class="table table-striped table-sm table-custom-blue">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Jugador</th>
-                            <th>Partidas</th>
-                            <th>Derribos</th>
-                            <th>Asistencias</th>
-                            <th>Kills</th>
-                            <th>Headshots</th>
-                            <th>Daño</th>
-                            <th>Revives</th>
-                            <th>Team kills</th>
-                            <th>Tiempo de juego</th>
-                            <th>Posición promedio</th>
-                            <th>Puntos</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (int i = start; i < end; i++)
-                        {
-                            var r = Model.Rankings[i];
+            <div class="table-container">
+                <div class="table-scroll-wrapper">
+                    <table class="table table-striped table-sm responsive-table">
+                        <thead>
                             <tr>
-                                <td>@(i + 1)</td>
-                                <td>@(string.IsNullOrEmpty(r.PlayerNickname) ? "-" : r.PlayerNickname)</td>
-                                <td>@r.MatchesCount</td>
-                                <td>@r.TotalDBNOs</td>
-                                <td>@r.TotalAssists</td>
-                                <td>@r.TotalKills</td>
-                                <td>@r.TotalHeadshotsKills</td>
-                                <td>@r.TotalDamageDealt</td>
-                                <td>@r.TotalRevives</td>
-                                <td>@r.TotalTeamKill</td>
-                                <td>@r.TotalTimeSurvivedFormatted</td>
-                                <td>@r.AverageWinPlace</td>
-                                <td>@r.TotalPoints.ToString("F2")</td>
+                                <th>#</th>
+                                <th>Jugador</th>
+                                <th>Partidas</th>
+                                <th>Derribos</th>
+                                <th>Asistencias</th>
+                                <th>Kills</th>
+                                <th>Headshots</th>
+                                <th>Daño</th>
+                                <th>Revives</th>
+                                <th>Team kills</th>
+                                <th>Tiempo de juego</th>
+                                <th>Posición promedio</th>
+                                <th>Puntos</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @for (int i = start; i < end; i++)
+                            {
+                                var r = Model.Rankings[i];
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td>@(string.IsNullOrEmpty(r.PlayerNickname) ? "-" : r.PlayerNickname)</td>
+                                    <td>@r.MatchesCount</td>
+                                    <td>@r.TotalDBNOs</td>
+                                    <td>@r.TotalAssists</td>
+                                    <td>@r.TotalKills</td>
+                                    <td>@r.TotalHeadshotsKills</td>
+                                    <td>@r.TotalDamageDealt</td>
+                                    <td>@r.TotalRevives</td>
+                                    <td>@r.TotalTeamKill</td>
+                                    <td>@r.TotalTimeSurvivedFormatted</td>
+                                    <td>@r.AverageWinPlace</td>
+                                    <td>@r.TotalPoints.ToString("F2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="scroll-indicator">
+                    ← Desliza para ver más →
+                </div>
             </div>
         }
     }
