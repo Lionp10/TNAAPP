@@ -99,10 +99,6 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
-                <div id="lifetimeSpinner" class="d-flex justify-content-center my-4">
-                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
-                </div>
-
                 <div id="lifetimeContent" style="display:none;">
                     <div class="mb-3">
                         <strong>Jugador:</strong> <span id="lifetimePlayerName"></span>
@@ -129,17 +125,27 @@
                 var modalEl = document.getElementById('lifetimeModal');
                 var bsModal = new bootstrap.Modal(modalEl, {});
 
+                function formatDuration(value) {
+                    if (value == null || value === '') return '00:00:00';
+                    var secs = Number(value);
+                    if (isNaN(secs) || !isFinite(secs)) return String(value);
+                    var total = Math.floor(secs);
+                    var h = Math.floor(total / 3600);
+                    var m = Math.floor((total % 3600) / 60);
+                    var s = total % 60;
+                    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                }
+
                 function renderModeCard(modeKey, data) {
                     if (!data) {
                         return '<div class="col-12"><div class="glass-card p-3">No hay datos para ' + modeKey + '.</div></div>';
                     }
 
-                    // Campos relevantes a mostrar
                     var wins = data.wins ?? 0;
                     var kills = data.kills ?? 0;
                     var damage = data.damageDealt ?? 0;
                     var rounds = data.roundsPlayed ?? 0;
-                    var timeSurvived = data.timeSurvived ?? 0;
+                    var timeSurvived = formatDuration(data.timeSurvived ?? 0);
                     var headshots = data.headshotKills ?? 0;
                     var assists = data.assists ?? 0;
                     var revives = data.revives ?? 0;
@@ -150,15 +156,15 @@
                         '<div class="glass-card p-3">' +
                         '<h6 class="mb-2 text-capitalize">' + modeKey.replace('-', ' ') + '</h6>' +
                         '<div class="row">' +
-                        '<div class="col-6"><strong>Wins:</strong> ' + wins + '</div>' +
-                        '<div class="col-6"><strong>Kills:</strong> ' + kills + '</div>' +
+                        '<div class="col-6"><strong>Victorias:</strong> ' + wins + '</div>' +
+                        '<div class="col-6"><strong>Muertes:</strong> ' + kills + '</div>' +
                         '<div class="col-6"><strong>Headshots:</strong> ' + headshots + '</div>' +
-                        '<div class="col-6"><strong>Assists:</strong> ' + assists + '</div>' +
+                        '<div class="col-6"><strong>Asistencias:</strong> ' + assists + '</div>' +
                         '<div class="col-6"><strong>Revives:</strong> ' + revives + '</div>' +
                         '<div class="col-6"><strong>Top10s:</strong> ' + top10s + '</div>' +
-                        '<div class="col-6"><strong>Rounds:</strong> ' + rounds + '</div>' +
-                        '<div class="col-6"><strong>Damage:</strong> ' + damage + '</div>' +
-                        '<div class="col-12"><strong>TimeSurvived:</strong> ' + timeSurvived + '</div>' +
+                        '<div class="col-6"><strong>Rondas:</strong> ' + rounds + '</div>' +
+                        '<div class="col-6"><strong>Daño:</strong> ' + damage + '</div>' +
+                        '<div class="col-12"><strong>Tiempo de juego:</strong> ' + timeSurvived + '</div>' +
                         '</div></div></div>';
                     return html;
                 }
@@ -176,7 +182,9 @@
                     $('#lifetimeError').addClass('d-none').text('');
                     $('#lifetimeContent').hide();
                     $('#modesContainer').empty();
-                    $('#lifetimeSpinner').show();
+
+                    // Mostrar spinner y marcar aria-busy
+                    $('#lifetimeSpinner').show().attr('aria-busy', 'true');
 
                     bsModal.show();
 
@@ -185,9 +193,9 @@
                         method: 'GET',
                         data: { playerId: playerId },
                         dataType: 'json',
+                        timeout: 15000, // 15s timeout razonable
                         success: function (resp) {
-                            $('#lifetimeSpinner').hide();
-
+                            console.debug('PlayerLifetimeStats: respuesta recibida', resp);
                             try {
                                 var gm = resp && resp.data && resp.data.attributes && resp.data.attributes.gameModeStats ? resp.data.attributes.gameModeStats : null;
                                 if (!gm) {
@@ -195,9 +203,7 @@
                                     return;
                                 }
 
-                                // Modos a mostrar: solo, duo, squad, solo-fpp, duo-fpp, squad-fpp
                                 var modes = ['solo', 'duo', 'squad', 'solo-fpp', 'duo-fpp', 'squad-fpp'];
-
                                 var html = '';
                                 modes.forEach(function (m) {
                                     var entry = gm[m];
@@ -207,16 +213,22 @@
                                 $('#modesContainer').html(html);
                                 $('#lifetimeContent').show();
                             } catch (ex) {
+                                console.error('Error procesando la respuesta:', ex);
                                 $('#lifetimeError').removeClass('d-none').text('Error procesando la respuesta.');
                             }
                         },
                         error: function (xhr, status, err) {
-                            $('#lifetimeSpinner').hide();
+                            console.error('PlayerLifetimeStats: error', status, err, xhr && xhr.responseText);
                             var msg = 'Error al obtener datos.';
+                            if (status === 'timeout') msg = 'La petición ha tardado demasiado. Inténtalo de nuevo.';
                             if (xhr && xhr.responseText) {
-                                try { msg = JSON.parse(xhr.responseText).message || xhr.responseText; } catch (e) { msg = xhr.responseText; }
+                                try { msg = JSON.parse(xhr.responseText).message || xhr.responseText; } catch (e) { /* mantener msg */ }
                             }
                             $('#lifetimeError').removeClass('d-none').text(msg);
+                        },
+                        complete: function () {
+                            // Siempre ocultar el spinner (success o error o timeout)
+                            $('#lifetimeSpinner').hide().attr('aria-busy', 'false');
                         }
                     });
                 });
