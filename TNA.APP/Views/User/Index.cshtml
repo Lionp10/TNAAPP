@@ -1,0 +1,198 @@
+﻿@model IEnumerable<TNA.BLL.DTOs.UserDTO>
+
+@{
+    ViewData["Title"] = "Usuarios";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<style>
+    /* Mejora de tablas responsivas: en móvil transformamos cada fila en 'card' apilada
+       y mostramos la etiqueta de la columna usando ::before para no tocar el HTML. */
+
+    .table-responsive {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Sólo en pantallas pequeñas: convertir tabla en lista apilada */
+    @@media (max-width: 768px) {
+        .table-responsive .table thead
+
+    {
+        display: none; /* ocultamos cabecera */
+    }
+
+    .table-responsive .table,
+    .table-responsive .table tbody,
+    .table-responsive .table tr {
+        display: block;
+        width: 100%;
+    }
+
+        .table-responsive .table tr {
+            margin-bottom: 0.75rem;
+            background: rgba(15,23,42,0.6);
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+
+        .table-responsive .table td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.65rem;
+            border: none;
+            width: 100%;
+            color: var(--text-secondary, #e2e8f0);
+            background: transparent;
+        }
+
+            /* Label generado antes del contenido (columna) */
+            .table-responsive .table td::before {
+                content: attr(data-label);
+                font-weight: 700;
+                color: var(--text-muted, #94a3b8);
+                margin-right: 0.75rem;
+                min-width: 95px;
+                display: inline-block;
+                text-transform: uppercase;
+                font-size: 0.75rem;
+                letter-spacing: 0.4px;
+            }
+
+            /* Asegurar que la columna de acciones no se rompa visualmente */
+            .table-responsive .table td.text-end,
+            .table-responsive .table td:last-child {
+                justify-content: flex-end;
+            }
+
+            /* Ajustes visuales para badges y botones */
+            .table-responsive .table td .badge {
+                font-size: 0.75rem;
+                padding: 0.35rem 0.5rem;
+            }
+
+            .table-responsive .table td .btn {
+                padding: 0.28rem 0.45rem;
+                font-size: 0.85rem;
+            }
+
+    }
+
+    /* Alternativa: permitir scroll horizontal si prefieres mantener la tabla intacta */
+    @@media (max-width: 550px) {
+        .table-responsive
+
+    {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    }
+</style>
+
+<section class="container mt-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h2 class="mb-0">Usuarios</h2>
+            <small class="text-light">Listado y administración de usuarios</small>
+        </div>
+        <div>
+            <a asp-action="Create" class="btn btn-accent">
+                <i class="bi bi-person-plus"></i> Crear usuario
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+    }
+
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover align-middle">
+            <thead>
+                <tr>
+                    <th style="width:48px;">#</th>
+                    <th>Nickname</th>
+                    <th>Email</th>
+                    <th style="width:110px;">Rol</th>
+                    <th style="width:110px;">Miembro</th>
+                    <th style="width:180px;">Creado</th>
+                    <th style="width:100px;">Estado</th>
+                    <th style="width:240px;" class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model == null || !Model.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">No hay usuarios para mostrar.</td>
+                    </tr>
+                }
+                else
+                {
+                    var index = 1;
+                    foreach (var user in Model)
+                    {
+                        <tr>
+                            <td class="fw-bold">@index</td>
+                            <td>@user.Nickname</td>
+                            <td>@user.Email</td>
+                            <td>@user.RoleId</td>
+                            <td>@(user.MemberId?.ToString() ?? "-")</td>
+                            <td>@(user.CreatedAt.HasValue ? user.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm") : "-")</td>
+                            <td>
+                                @if (user.Enabled)
+                                {
+                                    <span class="badge bg-success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactivo</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@user.Id" class="btn btn-sm btn-light me-1" title="Detalles">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-sm btn-primary text-white me-1" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@user.Id" class="btn btn-sm btn-warning text-white me-1" title="Deshabilitar">
+                                    <i class="bi bi-person-x"></i>
+                                </a>
+
+                                <form asp-action="HardDelete" method="post" class="d-inline-block" onsubmit="return confirmHardDelete();">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@user.Id" />
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Eliminar permanentemente">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        index++;
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        function confirmHardDelete() {
+            return confirm('Esta acción eliminará el usuario permanentemente. ¿Desea continuar?');
+        }
+    </script>
+}

@@ -1,0 +1,68 @@
+﻿@model TNA.BLL.DTOs.UserCreateDTO
+
+@{
+    ViewData["Title"] = "Crear usuario";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<section class="container mt-4">
+    <div class="card bg-dark border-0 mb-4">
+        <div class="card-body">
+            <h4 class="card-title mb-3">Nueva cuenta</h4>
+
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Nickname" class="form-label text-light">Nickname</label>
+                    <input asp-for="Nickname" class="form-control" />
+                    <span asp-validation-for="Nickname" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label text-light">Email</label>
+                    <input asp-for="Email" type="email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label text-light">Contraseña</label>
+                    <input asp-for="Password" type="password" autocomplete="new-password" class="form-control" />
+                    <div class="form-text">La contraseña se almacenará de forma segura (hash).</div>
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label asp-for="RoleId" class="form-label text-light">RoleId</label>
+                        <input asp-for="RoleId" type="number" class="form-control" />
+                        <span asp-validation-for="RoleId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="MemberId" class="form-label text-light">MemberId (opcional)</label>
+                        <input asp-for="MemberId" type="number" class="form-control" />
+                        <span asp-validation-for="MemberId" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-4 d-flex align-items-center">
+                        <div class="form-check mt-3">
+                            <input asp-for="Enabled" class="form-check-input" />
+                            <label asp-for="Enabled" class="form-check-label text-light">Habilitado</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-accent"><i class="bi bi-save"></i> Crear</button>
+                    <a asp-action="Index" class="btn btn-light">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

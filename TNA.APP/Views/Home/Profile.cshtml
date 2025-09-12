@@ -1,0 +1,275 @@
+﻿@model TNA.APP.Models.ProfileViewModel
+
+@{
+    ViewData["Title"] = "Mi perfil";
+
+    // Leer roleid desde claims para decidir qué campos mostrar
+    int roleId = 0;
+    var roleClaim = User.FindFirst("roleid")?.Value;
+    int.TryParse(roleClaim, out roleId);
+    bool showMemberFields = (roleId == 3); // RoleId == 3 ve todos los campos
+}
+
+<link rel="stylesheet" href="~/css/auth.css" />
+<link rel="stylesheet" href="~/css/profile.css" />
+
+@section Hero {
+    <section class="auth-container">
+        <div class="auth-background"></div>
+        <div class="container mt-5">
+            <form asp-action="Profile" method="post" novalidate>
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="MemberId" />
+
+                @* Si se muestran los campos de member dejamos el hidden Member.Id, si no, no lo exponemos *@
+                @if (showMemberFields && Model.Member != null)
+                {
+                    <input type="hidden" asp-for="Member.Id" />
+                }
+
+                <div class="auth-card">
+                    <div class="auth-card-header d-flex justify-content-between align-items-center">
+                        <h2 class="auth-title mb-0"><i class="bi bi-person-circle me-2"></i> Perfil</h2>
+                    </div>
+
+                    <div class="auth-card-body">
+                        @if (TempData["SuccessMessage"] != null)
+                        {
+                            <div class="alert alert-success auth-alert">
+                                <i class="bi bi-check-circle me-2"></i> @TempData["SuccessMessage"]
+                            </div>
+                        }
+                        @if (TempData["ErrorMessage"] != null)
+                        {
+                            <div class="alert alert-danger auth-alert">
+                                <i class="bi bi-exclamation-triangle me-2"></i> @TempData["ErrorMessage"]
+                            </div>
+                        }
+
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="row gx-4">
+                            <!-- Datos personales -->
+                            <div class="col-lg-6">
+                                <h5 class="mb-3">Datos personales</h5>
+
+                                <div class="mb-3">
+                                    <label asp-for="Nickname" class="form-label small text-muted"></label>
+                                    <input asp-for="Nickname" class="form-control" />
+                                    <span asp-validation-for="Nickname" class="text-danger small"></span>
+                                </div>
+
+                                @* Mostrar campos de member (Nombre/Apellido) solo si el role permite verlo *@
+                                @if (showMemberFields)
+                                {
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label small text-muted">Nombre</label>
+                                            <input asp-for="Member.FirstName" class="form-control" />
+                                            <span asp-validation-for="Member.FirstName" class="text-danger small"></span>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label small text-muted">Apellido</label>
+                                            <input asp-for="Member.LastName" class="form-control" />
+                                            <span asp-validation-for="Member.LastName" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                }
+
+                                <div class="mb-3">
+                                    <label asp-for="Email" class="form-label small text-muted"></label>
+                                    @* Email mostrado en solo lectura para evitar modificación en UI; servidor usa el email existente siempre *@
+                                    <input asp-for="Email" class="form-control" readonly />
+                                    <span asp-validation-for="Email" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="Password" class="form-label small text-muted"></label>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="togglePassword(this)"><i class="bi bi-eye"></i></button>
+                                    </div>
+                                    <small class="form-text text-light">Dejar vacío para conservar la contraseña actual.</small>
+                                    <span asp-validation-for="Password" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="ConfirmPassword" class="form-label small text-muted"></label>
+                                    <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                                    <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <!-- Datos jugador -->
+                            <div class="col-lg-6">
+                                <h5 class="mb-3">Datos jugador</h5>
+
+                                @if (showMemberFields)
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label small text-muted">Nickname jugador</label>
+                                        <input asp-for="Member.Nickname" class="form-control" readonly />
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label small text-muted">PlayerId</label>
+                                        <input asp-for="Member.PlayerId" class="form-control" readonly />
+                                    </div>
+
+                                    <div class="mt-4">
+                                        <label class="form-label small text-muted">Redes sociales (máx. 5)</label>
+
+                                        <div id="socialsList" class="mb-2">
+                                            @if (Model.MemberSocialMedias != null && Model.MemberSocialMedias.Any())
+                                            {
+                                                for (int i = 0; i < Model.MemberSocialMedias.Count && i < 5; i++)
+                                                {
+                                                    <div class="d-flex gap-2 align-items-center mb-2 social-row" data-index="@i">
+                                                        <input type="hidden" name="MemberSocialMedias[@i].Id" value="@Model.MemberSocialMedias[i].Id" />
+                                                        <input type="hidden" name="MemberSocialMedias[@i].MemberId" value="@Model.Member.Id" />
+
+                                                        <select name="MemberSocialMedias[@i].SocialMediaId" class="form-select" style="width:140px;">
+                                                            @{
+                                                                var opts = new Dictionary<string, string> {
+                                                                                            { "ST","Steam"},{ "TW","Twitch"},{ "YT","YouTube"},
+                                                                                            { "IG","Instagram"},{ "FB","Facebook"},{ "X","X"},
+                                                                                            { "TK","Tiktok"},{ "RD","Reddit"},{ "SP","Snapchat"},{ "WS","WhatsApp" }
+                                                                                            };
+                                                                var sel = Model.MemberSocialMedias[i].SocialMediaId;
+                                                            }
+                                                            @foreach (var kv in opts)
+                                                            {
+                                                                <option value="@kv.Key" selected="@(kv.Key == sel ? "selected" : null)">@kv.Value</option>
+                                                            }
+                                                        </select>
+
+                                                        <input type="url" name="MemberSocialMedias[@i].SocialMediaUrl" class="form-control" placeholder="https://..." value="@Model.MemberSocialMedias[i].SocialMediaUrl" />
+
+                                                        <button type="button" class="btn btn-outline-danger btn-sm btn-remove" title="Eliminar">×</button>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+
+                                        <div class="align-items-center">
+                                            <button type="button" id="btnAddSocial" class="btn btn-sm btn-secondary form-control">Agregar red social</button>
+                                        </div>
+                                        <div>
+                                            <small class="form-text text-light ms-2">Permitidas: Steam, Twitch, YouTube, Instagram, Facebook, X, Tiktok, Reddit, Snapchat, WhatsApp</small>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-light small">No tienes permiso para ver/editar los datos de jugador.</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="auth-card-footer text-end mt-3">
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function togglePassword(button) {
+            const input = button.previousElementSibling;
+            const icon = button.querySelector('i');
+            if (!input) return;
+            if (input.type === 'password') { input.type = 'text'; icon.className = 'bi bi-eye-slash'; }
+            else { input.type = 'password'; icon.className = 'bi bi-eye'; }
+        }
+
+        (function () {
+            const maxSocials = 5;
+            const allowed = { ST: 'Steam', TW: 'Twitch', YT: 'YouTube', IG: 'Instagram', FB: 'Facebook', X: 'X', TK: 'Tiktok', RD: 'Reddit', SP: 'Snapchat', WS: 'WhatsApp' };
+
+            function countRows() { return document.querySelectorAll('#socialsList .social-row').length; }
+            function getUsedTypes() { return Array.from(document.querySelectorAll('#socialsList select')).map(s => s.value).filter(v => v); }
+
+            function createSelect(selected) {
+                const select = document.createElement('select');
+                select.className = 'form-select';
+                select.style.width = '140px';
+                for (const k in allowed) {
+                    const opt = document.createElement('option');
+                    opt.value = k;
+                    opt.textContent = allowed[k];
+                    if (k === selected) opt.selected = true;
+                    select.appendChild(opt);
+                }
+                return select;
+            }
+
+            function buildRow(index, id, memberId, type, url) {
+                const container = document.createElement('div');
+                container.className = 'd-flex gap-2 align-items-center mb-2 social-row';
+                container.dataset.index = index;
+
+                const hidId = document.createElement('input'); hidId.type = 'hidden'; hidId.name = `MemberSocialMedias[${index}].Id`; hidId.value = id || '0'; container.appendChild(hidId);
+                const hidMid = document.createElement('input'); hidMid.type = 'hidden'; hidMid.name = `MemberSocialMedias[${index}].MemberId`; hidMid.value = memberId || ''; container.appendChild(hidMid);
+
+                const select = createSelect(type); select.name = `MemberSocialMedias[${index}].SocialMediaId`; container.appendChild(select);
+
+                const input = document.createElement('input'); input.type = 'url'; input.name = `MemberSocialMedias[${index}].SocialMediaUrl`; input.className = 'form-control'; input.placeholder = 'https://...'; input.value = url || ''; container.appendChild(input);
+
+                const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn btn-outline-danger btn-sm btn-remove'; btn.textContent = '×';
+                btn.addEventListener('click', () => { container.remove(); rebuildIndexes(); });
+                container.appendChild(btn);
+
+                return container;
+            }
+
+            function rebuildIndexes() {
+                const rows = document.querySelectorAll('#socialsList .social-row');
+                rows.forEach((row, i) => {
+                    row.dataset.index = i;
+                    const inputs = row.querySelectorAll('input, select');
+                    inputs.forEach(el => {
+                        if (!el.name) return;
+                        const suffix = el.name.split('].')[1];
+                        el.name = `MemberSocialMedias[${i}].${suffix}`;
+                    });
+                });
+            }
+
+            document.getElementById('btnAddSocial')?.addEventListener('click', function () {
+                if (countRows() >= maxSocials) { alert('Máximo 5 redes.'); return; }
+                const used = getUsedTypes();
+                const remaining = Object.keys(allowed).filter(k => !used.includes(k));
+                const type = remaining.length ? remaining[0] : Object.keys(allowed)[0];
+                const idx = countRows();
+                const memberId = document.querySelector('input[name="Member.Id"]')?.value || document.querySelector('input[name="MemberId"]')?.value || '';
+                const row = buildRow(idx, 0, memberId, type, '');
+                document.getElementById('socialsList').appendChild(row);
+                rebuildIndexes();
+            });
+
+            document.addEventListener('click', function (e) {
+                if (e.target && e.target.classList.contains('btn-remove')) {
+                    e.target.closest('.social-row')?.remove();
+                    rebuildIndexes();
+                }
+            });
+
+            document.addEventListener('change', function (e) {
+                if (e.target && e.target.tagName === 'SELECT' && e.target.name.indexOf('MemberSocialMedias') >= 0) {
+                    const vals = getUsedTypes();
+                    const duplicates = vals.filter((v, i) => vals.indexOf(v) !== i);
+                    if (duplicates.length) { alert('No se permiten tipos duplicados en redes sociales.'); e.target.value = ''; }
+                }
+            });
+
+            rebuildIndexes();
+        })();
+    </script>
+}

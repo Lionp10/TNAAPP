@@ -110,6 +110,9 @@ body{
     font-size: 1.05rem;
 }
 
+.text-muted-tna {
+    color: var(--muted);
+}
 
 /* Reusable "glass" card para estadísticas/torneos */
 .glass-card{

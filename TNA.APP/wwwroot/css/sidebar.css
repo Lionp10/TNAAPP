@@ -1,0 +1,359 @@
+﻿/* Sidebar Styles - Following TNA ESPORT Design System */
+:root {
+    --sidebar-width: 280px;
+    --sidebar-collapsed-width: 70px;
+    --sidebar-bg: rgba(7, 10, 12, 0.95);
+    --sidebar-border: rgba(255, 255, 255, 0.04);
+    --sidebar-hover: rgba(255, 255, 255, 0.02);
+    --sidebar-active: rgba(0, 166, 230, 0.1);
+    --sidebar-text: #e6f2f8;
+    --sidebar-text-muted: #9fb6c6;
+    --brand-color: #00a6e6;
+    --brand-dark: #0079b0;
+    --transition-speed: 0.3s;
+}
+
+/* Sidebar Container */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+    backdrop-filter: blur(10px) saturate(120%);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    transition: all var(--transition-speed) ease;
+    display: flex;
+    flex-direction: column;
+}
+
+    /* Sidebar collapsed state */
+    .sidebar.collapsed {
+        width: var(--sidebar-collapsed-width);
+    }
+
+        .sidebar.collapsed .sidebar-brand-text,
+        .sidebar.collapsed .sidebar-nav-text {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .sidebar.collapsed .sidebar-toggle i {
+            transform: rotate(180deg);
+        }
+
+/* Sidebar Header */
+.sidebar-header {
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid var(--sidebar-border);
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Changed from space-between to flex-start */
+    min-height: 80px;
+    position: relative; /* Added relative positioning for toggle button */
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--sidebar-text);
+    text-decoration: none;
+}
+
+.sidebar-brand-icon {
+    font-size: 1.5rem;
+    color: var(--brand-color);
+    flex-shrink: 0;
+}
+
+.sidebar-brand-text {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    transition: all var(--transition-speed) ease;
+    white-space: nowrap;
+}
+
+/* Sidebar Toggle Button */
+.sidebar-toggle {
+    background: var(--sidebar-bg);
+    border: 1px solid var(--sidebar-border);
+    color: var(--sidebar-text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    /* Positioned toggle button on the right edge of sidebar */
+    position: absolute;
+    top: 50%;
+    right: -16px; /* Half the button width to center it on the border */
+    transform: translateY(-50%);
+    z-index: 1001;
+    backdrop-filter: blur(10px) saturate(120%);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+}
+
+    .sidebar-toggle:hover {
+        background: var(--sidebar-hover);
+        color: var(--sidebar-text);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-toggle i {
+        transition: transform var(--transition-speed) ease;
+        font-size: 0.9rem;
+    }
+
+/* Sidebar Menu */
+.sidebar-menu {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0;
+}
+
+.sidebar-nav {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex: 1;
+}
+
+.sidebar-nav-item {
+    margin-bottom: 0.25rem;
+}
+
+.sidebar-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    color: var(--sidebar-text-muted);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-radius: 0;
+    position: relative;
+    font-weight: 500;
+}
+
+    .sidebar-nav-link:hover {
+        background: var(--sidebar-hover);
+        color: var(--sidebar-text);
+    }
+
+    .sidebar-nav-link.active {
+        background: var(--sidebar-active);
+        color: var(--brand-color);
+    }
+
+        .sidebar-nav-link.active::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, var(--brand-color), var(--brand-dark));
+        }
+
+    .sidebar-nav-link i {
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        width: 20px;
+        text-align: center;
+    }
+
+.sidebar-nav-text {
+    transition: all var(--transition-speed) ease;
+    white-space: nowrap;
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+    padding: 1rem 0;
+    border-top: 1px solid var(--sidebar-border);
+}
+
+.logout-link {
+    color: #ef4444 !important;
+}
+
+    .logout-link:hover {
+        background: rgba(239, 68, 68, 0.1) !important;
+        color: #f87171 !important;
+    }
+
+/* Mobile Sidebar Toggle */
+.mobile-sidebar-toggle {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1001;
+    background: var(--sidebar-bg);
+    border: 1px solid var(--sidebar-border);
+    color: var(--sidebar-text);
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+    .mobile-sidebar-toggle:hover {
+        background: var(--sidebar-hover);
+        transform: translateY(-1px);
+    }
+
+    .mobile-sidebar-toggle i {
+        font-size: 1.2rem;
+    }
+
+/* Sidebar Overlay for Mobile */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-speed) ease;
+}
+
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+/* Main Content Wrapper */
+.main-wrapper {
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+    transition: margin-left var(--transition-speed) ease;
+    display: flex;
+    flex-direction: column;
+}
+
+    .main-wrapper.sidebar-collapsed {
+        margin-left: var(--sidebar-collapsed-width);
+    }
+
+/* Content Wrapper Adjustments */
+.content-wrapper {
+    flex: 1;
+    padding: 2rem;
+}
+
+/* Footer Adjustments */
+.site-footer {
+    margin-top: auto;
+    padding: 1.5rem 2rem;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.01));
+    border-top: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+/* Desktop Responsive */
+@media (max-width: 1200px) {
+    :root {
+        --sidebar-width: 260px;
+    }
+}
+
+/* Tablet Responsive */
+@media (max-width: 992px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+        .sidebar.mobile-open {
+            transform: translateX(0);
+            width: 100%;
+            max-width: 320px;
+        }
+
+    .main-wrapper {
+        margin-left: 0;
+    }
+
+        .main-wrapper.sidebar-collapsed {
+            margin-left: 0;
+        }
+
+    .mobile-sidebar-toggle {
+        display: flex;
+    }
+
+    .desktop-toggle {
+        display: none;
+    }
+
+    .content-wrapper {
+        padding: 1.5rem;
+        padding-top: 5rem; /* Space for mobile toggle */
+    }
+
+    .site-footer {
+        padding: 1.5rem;
+    }
+}
+
+/* Mobile Responsive */
+@media (max-width: 576px) {
+    .sidebar.mobile-open {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .content-wrapper {
+        padding: 1rem;
+        padding-top: 4.5rem;
+    }
+
+    .site-footer {
+        padding: 1rem;
+    }
+
+    .mobile-sidebar-toggle {
+        width: 40px;
+        height: 40px;
+    }
+
+        .mobile-sidebar-toggle i {
+            font-size: 1.1rem;
+        }
+}
+
+/* Animation for smooth transitions */
+@media (prefers-reduced-motion: no-preference) {
+    .sidebar,
+    .main-wrapper,
+    .sidebar-nav-text,
+    .sidebar-brand-text {
+        transition-duration: var(--transition-speed);
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .sidebar {
+        border-right-width: 2px;
+    }
+
+    .sidebar-nav-link.active::before {
+        width: 4px;
+    }
+}

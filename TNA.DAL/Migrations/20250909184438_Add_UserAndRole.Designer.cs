@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TNA.DAL.DbContext;
 
@@ -11,9 +12,11 @@ using TNA.DAL.DbContext;
 namespace TNA.DAL.Migrations
 {
     [DbContext(typeof(TNADbContext))]
-    partial class TNADbContextModelSnapshot : ModelSnapshot
+    [Migration("20250909184438_Add_UserAndRole")]
+    partial class Add_UserAndRole
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

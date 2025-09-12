@@ -1,0 +1,116 @@
+﻿@model TNA.APP.Models.LoginViewModel
+
+@{
+    ViewData["Title"] = "Iniciar sesión";
+}
+
+<link href="~/css/auth.css" rel="stylesheet" />
+
+@section Hero {
+    <section class="auth-section">
+        <div class="auth-container">
+            <div class="auth-wrapper">
+                <!-- Brand Header -->
+                <div class="auth-brand">
+                    <div class="brand-icon">
+                        <i class="bi bi-controller"></i>
+                    </div>
+                    <div class="brand-text-wrap">
+                        <span class="brand-text">TNA ESPORT</span>
+                        <span class="brand-sub">Iniciar sesión</span>
+                    </div>
+                </div>
+
+                <!-- Login Card -->
+                <div class="auth-card">
+                    <div class="auth-card-header">
+                        <h1 class="auth-title">Bienvenido de vuelta</h1>
+                        <p class="auth-subtitle">Ingresa tus credenciales para continuar</p>
+                    </div>
+
+                    <form asp-action="Index" method="post" class="auth-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ReturnUrl" />
+
+                        <div asp-validation-summary="ModelOnly" class="auth-error-summary"></div>
+
+                        <div class="form-group">
+                            <label asp-for="Email" class="form-label">
+                                <i class="bi bi-envelope"></i>
+                                Email
+                            </label>
+                            <input asp-for="Email" class="form-input" placeholder="tu@correo.com" autocomplete="email" />
+                            <span asp-validation-for="Email" class="form-error"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="Password" class="form-label">
+                                <i class="bi bi-lock"></i>
+                                Contraseña
+                            </label>
+                            <div class="password-input-wrapper">
+                                <input asp-for="Password" class="form-input" type="password" autocomplete="current-password" placeholder="••••••••" />
+                                <button type="button" class="password-toggle" onclick="togglePassword()">
+                                    <i class="bi bi-eye" id="password-toggle-icon"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="form-error"></span>
+                        </div>
+
+                        <div class="form-options">
+                            <div class="form-check-wrapper">
+                                <input asp-for="RememberMe" class="form-checkbox" id="rememberMe" />
+                                <label asp-for="RememberMe" class="form-check-label" for="rememberMe">
+                                    <span class="checkbox-custom"></span>
+                                    Recuérdame
+                                </label>
+                            </div>
+                            <a asp-action="ForgotPassword" class="forgot-password-link">
+                                ¿Olvidaste tu contraseña?
+                            </a>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary-auth">
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                <span>Entrar</span>
+                            </button>
+
+                            <div class="divider">
+                                <span>o</span>
+                            </div>
+
+                            <a asp-action="Register" class="btn-secondary-auth">
+                                <i class="bi bi-person-plus"></i>
+                                <span>Crear cuenta nueva</span>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Footer -->
+                <div class="auth-footer">
+                    <p>¿Necesitas ayuda? <a href="#" class="support-link">Contacta soporte</a></p>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function togglePassword() {
+            const passwordInput = document.querySelector('input[name="Password"]');
+            const toggleIcon = document.getElementById('password-toggle-icon');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.className = 'bi bi-eye-slash';
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.className = 'bi bi-eye';
+            }
+        }
+    </script>
+}

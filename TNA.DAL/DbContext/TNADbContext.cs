@@ -13,6 +13,10 @@ namespace TNA.DAL.DbContext
         public DbSet<Match> Matches { get; set; } = null!;
         public DbSet<PlayerMatch> PlayerMatches { get; set; } = null!;
 
+        // Nuevas entidades
+        public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Role> Roles { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -49,7 +53,37 @@ namespace TNA.DAL.DbContext
                 b.Property(p => p.MatchCreatedAt).HasMaxLength(50).IsRequired();
             });
 
-            // Ajusta relaciones/índices según necesites.
+            // Configuración de Role
+            modelBuilder.Entity<Role>(b =>
+            {
+                b.Property(p => p.Description).IsRequired();
+            });
+
+            // Configuración de User
+            modelBuilder.Entity<User>(b =>
+            {
+                b.Property(p => p.Nickname).HasMaxLength(50).IsRequired();
+                b.Property(p => p.Email).HasMaxLength(50).IsRequired();
+                b.Property(p => p.PasswordHash).HasColumnType("nvarchar(max)").IsRequired();
+                b.Property(p => p.MemberId).IsRequired(false);
+                b.Property(p => p.CreatedAt).IsRequired(false);
+                b.Property(p => p.Enabled).IsRequired();
+
+                // Índice único sugerido en Email (opcional)
+                b.HasIndex(p => p.Email).IsUnique();
+
+                // Relación con Role (RoleId FK)
+                b.HasOne<Role>()
+                 .WithMany()
+                 .HasForeignKey(u => u.RoleId)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                // Relación opcional con ClanMember (MemberId FK)
+                b.HasOne(u => u.Member)
+                 .WithMany()
+                 .HasForeignKey(u => u.MemberId)
+                 .OnDelete(DeleteBehavior.SetNull);
+            });
         }
     }
 }
