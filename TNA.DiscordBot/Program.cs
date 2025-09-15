@@ -67,10 +67,14 @@ class Program
         {
             Console.WriteLine($"✅ {client.CurrentUser} conectado a Discord.");
 
-            // Rango: día anterior completo en UTC
-            var endDateUtc = DateTimeOffset.UtcNow.Date;      // ej: 2025-09-15T00:00:00Z
-            var startDateUtc = endDateUtc.AddDays(-1);        // día anterior completo
-            var displayDate = startDateUtc.ToString("dd/MM/yyyy"); // <-- mostrar la fecha del día anterior
+            // Rango: día anterior completo en zona GMT-3 (para coincidir con la web), convertido a UTC
+            var gmtMinus3 = TimeSpan.FromHours(-3);
+            var nowInZone = DateTimeOffset.UtcNow.ToOffset(gmtMinus3);
+            var startLocal = nowInZone.Date.AddDays(-1); // día calendario anterior EN GMT-3
+            var endLocal = startLocal.AddDays(1);        // exclusivo
+            var startDateUtc = new DateTimeOffset(startLocal, gmtMinus3).ToUniversalTime();
+            var endDateUtc = new DateTimeOffset(endLocal, gmtMinus3).ToUniversalTime();
+            var displayDate = startLocal.ToString("dd/MM/yyyy"); // mostrar la fecha del día anterior en zona GMT-3
 
             // Esperar para que caché de canales se estabilice
             await Task.Delay(2000);
@@ -81,23 +85,8 @@ class Program
             {
                 using var scope = host.Services.CreateScope();
                 var playerMatchService = scope.ServiceProvider.GetRequiredService<IPlayerMatchService>();
-                var db = scope.ServiceProvider.GetRequiredService<TNADbContext>();
 
-                // DIAGNÓSTICO: contar PlayerMatches en la BD y en el rango
-                var allMatches = await db.PlayerMatches.AsNoTracking().ToListAsync();
-                Console.WriteLine($"[DIAG] PlayerMatches total en BD: {allMatches.Count}");
-
-                var matchesInRange = allMatches
-                    .Where(pm =>
-                    {
-                        if (DateTimeOffset.TryParse(pm.MatchCreatedAt, out var dt)) return dt >= startDateUtc && dt < endDateUtc;
-                        return false;
-                    })
-                    .ToList();
-
-                Console.WriteLine($"[DIAG] PlayerMatches en el rango [{startDateUtc:o} - {endDateUtc:o}): {matchesInRange.Count}");
-
-                // Llamada real al servicio
+                // Llamada real al servicio: el servicio devuelve PlayerRankingDTO.TotalPoints ya calculado
                 ranking = await playerMatchService.GetRankingAsync(startDateUtc, endDateUtc);
                 Console.WriteLine($"[DIAG] Ranking obtenido por service: {ranking?.Count ?? 0} jugadores");
             }
