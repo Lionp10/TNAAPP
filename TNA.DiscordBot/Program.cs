@@ -68,15 +68,15 @@ class Program
         {
             Console.WriteLine($"✅ {client.CurrentUser} conectado a Discord.");
 
-            // Usar fecha completa UTC del día actual y tomar el día anterior completo como rango
+            // Rango: día anterior completo en UTC
             var endDateUtc = DateTimeOffset.UtcNow.Date;      // ej: 2025-09-15T00:00:00Z
             var startDateUtc = endDateUtc.AddDays(-1);        // día anterior completo
-            var displayDate = endDateUtc.ToString("dd/MM/yyyy"); // para título (sin "UTC")
+            var displayDate = startDateUtc.ToString("dd/MM/yyyy"); // <-- mostrar la fecha del día anterior
 
             // Esperar para que caché de canales se estabilice
             await Task.Delay(2000);
 
-            // Obtener ranking del último día: [startDateUtc, endDateUtc)
+            // Obtener ranking del día anterior: [startDateUtc, endDateUtc)
             List<TNA.BLL.DTOs.PlayerRankingDTO> ranking = new();
             try
             {
@@ -151,7 +151,7 @@ class Program
                 }
                 else
                 {
-                    // Enviar título sin "UTC"
+                    // Enviar título (fecha del día anterior)
                     var header = $"📢 Ranking diario ({displayDate}) — Total: {ranking.Count} jugadores";
                     await channel.SendMessageAsync(header);
 
@@ -163,9 +163,14 @@ class Program
                         await Task.Delay(200);
                     }
 
-                    // Mensaje final con enlace
-                    var footer = "Para ver más detalles y diferentes rankings, visitá www.tnaesport.somee.com";
-                    await channel.SendMessageAsync(footer);
+                    // Mensaje final con enlace clicable
+                    var link = "https://www.tnaesport.somee.com";
+                    await channel.SendMessageAsync($"Para ver más detalles y diferentes rankings, visitá {link}");
+
+                    // Etiquetar rol debajo del enlace
+                    //var roleMention = "<@&942961256099352628>";
+                    var roleMention = "<@&1417199787488575689>"; 
+                    await channel.SendMessageAsync(roleMention);
 
                     Console.WriteLine("📤 Mensajes de ranking enviados correctamente.");
                 }
