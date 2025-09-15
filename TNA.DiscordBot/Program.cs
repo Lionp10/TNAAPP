@@ -24,7 +24,8 @@ class Program
 
         var config = new DiscordSocketConfig
         {
-            GatewayIntents = GatewayIntents.Guilds // solo lo mínimo
+            // Necesitamos Guilds y GuildMessages para que pueda acceder a los canales
+            GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMessages
         };
 
         var client = new DiscordSocketClient(config);
@@ -39,12 +40,13 @@ class Program
         {
             Console.WriteLine($"✅ {client.CurrentUser} conectado a Discord.");
 
+            // Esperar un poco para que los canales estén disponibles en caché
+            await Task.Delay(2000);
+
             var channel = client.GetChannel(channelId) as IMessageChannel;
             if (channel != null)
             {
-                // 🔹 Aquí ponés el mensaje real que quieras enviar
                 string mensaje = $"📢 Reporte diario generado: {DateTime.UtcNow:dd/MM/yyyy HH:mm} UTC";
-
                 await channel.SendMessageAsync(mensaje);
                 Console.WriteLine("📤 Mensaje enviado correctamente.");
             }
@@ -57,15 +59,14 @@ class Program
             {
                 await client.LogoutAsync();
                 await client.StopAsync();
-                Environment.Exit(0); // Finaliza la app
+                Environment.Exit(0);
             }
         };
 
         await client.LoginAsync(TokenType.Bot, token);
         await client.StartAsync();
 
-        // Mantener activo si no es modo --run-once
         if (!runOnce)
-            await Task.Delay(-1);
+            await Task.Delay(-1); // Mantener vivo si no es modo run-once
     }
 }
