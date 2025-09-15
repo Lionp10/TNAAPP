@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
+using System.Threading;
+using System.Threading.Tasks;
 using TNA.BLL.DTOs;
 using TNA.BLL.Services.Interfaces;
 
@@ -41,7 +43,7 @@ namespace TNA.BLL.Services.Implementations
 
             try
             {
-                // SmtpClient.SendMailAsync acepta CancellationToken a partir de .NET 6 (sobrescribir si es necesario)
+                // SmtpClient.SendMailAsync acepta CancellationToken a partir de .NET 6
                 await client.SendMailAsync(msg, cancellationToken).ConfigureAwait(false);
                 _logger.LogInformation("Email enviado a {To} (subject: {Subject})", to, subject);
             }

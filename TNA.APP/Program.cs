@@ -8,6 +8,7 @@ using TNA.BLL.Services.Implementations;
 using Microsoft.AspNetCore.Identity;
 using TNA.DAL.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using TNA.BLL.DTOs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,9 @@ builder.Services.AddControllersWithViews();
 
 // Bind Pubg options from configuration
 builder.Services.Configure<PubgOptions>(builder.Configuration.GetSection("Pubg"));
+
+// Bind EmailSettings -> EmailDTO
+builder.Services.Configure<EmailDTO>(builder.Configuration.GetSection("EmailSettings"));
 
 // Registrar AutoMapper (escanea el ensamblado del perfil)
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile).Assembly);
@@ -42,6 +46,9 @@ builder.Services.AddScoped<IPlayerMatchRepository, PlayerMatchRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
+// Registrar servicio de correo (tu implementación) — solo IEmailService
+builder.Services.AddScoped<IEmailService, EmailService>();
+
 // Registrar servicios de negocio
 builder.Services.AddScoped<IClanService, ClanServcice>();
 builder.Services.AddScoped<IClanMemberService, ClanMemberService>();
@@ -52,7 +59,6 @@ builder.Services.AddScoped<IPlayerMatchService, PlayerMatchService>();
 // Authentication: establecer esquema por defecto y cookie auth
 builder.Services.AddAuthentication(options =>
 {
-    // Esquema por defecto para Authenticate/Challenge/SignIn
     options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -66,17 +72,13 @@ builder.Services.AddAuthentication(options =>
     options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
 
-    // Evitar que la app "pinche" en entornos donde quieres redirigir a home
     options.Events = new CookieAuthenticationEvents
     {
-        // Si se produce un Challenge (no autenticado), redirige a "/"
         OnRedirectToLogin = ctx =>
         {
-            // Cambia a la ruta que prefieras; aquí redirigimos a la página principal
             ctx.Response.Redirect("/");
             return Task.CompletedTask;
         },
-        // Si no tiene permiso, redirigimos a home o a una página específica
         OnRedirectToAccessDenied = ctx =>
         {
             ctx.Response.Redirect("/");
@@ -85,7 +87,6 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Authorization: policy para administradores usando la claim "roleid"
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy =>
@@ -94,7 +95,6 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -106,7 +106,6 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// IMPORTANT: activar autenticación antes de autorización
 app.UseAuthentication();
 app.UseAuthorization();
 

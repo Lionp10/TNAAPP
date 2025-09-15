@@ -19,16 +19,19 @@ namespace TNA.APP.Controllers
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly ILogger<AuthController> _logger;
         private readonly IDataProtector _protector;
+        private readonly IEmailService _emailService; // <-- nueva dependencia
 
         public AuthController(
             IUserService userService,
             IPasswordHasher<User> passwordHasher,
             ILogger<AuthController> logger,
-            IDataProtectionProvider dataProtectionProvider)
+            IDataProtectionProvider dataProtectionProvider,
+            IEmailService emailService) // <-- inyectado
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
             if (dataProtectionProvider == null) throw new ArgumentNullException(nameof(dataProtectionProvider));
             _protector = dataProtectionProvider.CreateProtector("TNA.APP.PasswordReset");
         }
@@ -257,50 +260,23 @@ namespace TNA.APP.Controllers
                 var resetUrl = Url.Action("ResetPassword", "Auth", new { token = tokenEncoded, email = email }, Request.Scheme);
 
                 // Intentar enviar email si existe un servicio compatible registrado.
-                // 1) Intentar Microsoft.AspNetCore.Identity.UI.Services.IEmailSender (común)
-                var identitySender = HttpContext.RequestServices.GetService(typeof(Microsoft.AspNetCore.Identity.UI.Services.IEmailSender))
-                                     as Microsoft.AspNetCore.Identity.UI.Services.IEmailSender;
-
-                if (identitySender != null)
+                if (_emailService != null)
                 {
                     var html = $"<p>Hola,</p><p>Para restablecer tu contraseña haz clic en el siguiente enlace:</p><p><a href=\"{resetUrl}\">Restablecer contraseña</a></p><p>Si no solicitaste este cambio, ignora este correo.</p>";
-                    await identitySender.SendEmailAsync(email, "Restablecer contraseña", html).ConfigureAwait(false);
-                    _logger.LogInformation("Se envió email de restablecimiento a {Email} usando IEmailSender.", email);
+                    try
+                    {
+                        await _emailService.SendEmailAsync(email, "Restablecer contraseña", html, true, cancellationToken).ConfigureAwait(false);
+                        _logger.LogInformation("Se envió email de restablecimiento a {Email} usando IEmailService.", email);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error enviando email de restablecimiento a {Email}", email);
+                        // no devolver error al usuario: mostramos el mismo mensaje por seguridad
+                    }
                 }
                 else
                 {
-                    // 2) Intentar un servicio personalizado TNA.BLL.Services.Interfaces.IEmailService si existe (llama a SendAsync/SendEmailAsync por reflexión)
-                    var customSender = HttpContext.RequestServices.GetService(typeof(TNA.BLL.Services.Interfaces.IEmailService));
-                    if (customSender != null)
-                    {
-                        var method = customSender.GetType().GetMethod("SendAsync") ?? customSender.GetType().GetMethod("SendEmailAsync") ?? customSender.GetType().GetMethod("Send");
-                        if (method != null)
-                        {
-                            var parameters = method.GetParameters();
-                            object? invokeResult = null;
-                            if (parameters.Length == 3) // to, subject, body
-                            {
-                                invokeResult = method.Invoke(customSender, new object[] { email, "Restablecer contraseña", $"Accede al enlace: {resetUrl}" });
-                            }
-                            else if (parameters.Length == 1) // maybe accepts a message object - best-effort
-                            {
-                                invokeResult = method.Invoke(customSender, new object[] { new { To = email, Subject = "Restablecer contraseña", Body = $"Accede al enlace: {resetUrl}" } });
-                            }
-
-                            if (invokeResult is Task task) await task.ConfigureAwait(false);
-                            _logger.LogInformation("Se intentó enviar email de restablecimiento a {Email} usando servicio personalizado.", email);
-                        }
-                        else
-                        {
-                            _logger.LogWarning("Servicio IEmailService presente pero no tiene método SendAsync/SendEmailAsync/Send compatible.");
-                            _logger.LogInformation("Reset link for {Email}: {Url}", email, resetUrl);
-                        }
-                    }
-                    else
-                    {
-                        // Ningún servicio de email registrado: registrar enlace en logs (útil en desarrollo)
-                        _logger.LogInformation("Reset link for {Email}: {Url}", email, resetUrl);
-                    }
+                    _logger.LogInformation("Reset link for {Email}: {Url}", email, resetUrl);
                 }
 
                 ViewBag.Message = userMessage;

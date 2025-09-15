@@ -8,6 +8,6 @@
         public string? SmtpUser { get; set; }
         public string? SmtpPass { get; set; }
         public string FromName { get; set; } = "TNA ESPORT";
-        public string FromEmail { get; set; } = "no-reply@tna.local";
+        public string FromEmail { get; set; } = "tna.clan20@gmail.com";
     }
 }
