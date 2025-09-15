@@ -27,3 +27,6 @@ jobs:
 
       - name: Run Discord Bot
         env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          DISCORD_CHANNEL_ID: "1416992053300035636"
+        run: dotnet run --project ./TNA.DiscordBot/TNA.DiscordBot.csproj --configuration Release -- --run-once
