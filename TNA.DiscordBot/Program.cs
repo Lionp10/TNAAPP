@@ -94,20 +94,41 @@ class Program
             {
                 using var scope = host.Services.CreateScope();
                 var playerMatchService = scope.ServiceProvider.GetRequiredService<IPlayerMatchService>();
+                var db = scope.ServiceProvider.GetRequiredService<TNADbContext>();
 
                 var end = DateTimeOffset.UtcNow;
                 var start = end.AddDays(-1);
 
+                // DIAGNÓSTICO: contar PlayerMatches en la BD y en el rango
+                var allMatches = await db.PlayerMatches.AsNoTracking().ToListAsync();
+                Console.WriteLine($"[DIAG] PlayerMatches total en BD: {allMatches.Count}");
+
+                var matchesInRange = allMatches
+                    .Where(pm =>
+                    {
+                        if (DateTimeOffset.TryParse(pm.MatchCreatedAt, out var dt)) return dt >= start && dt < end;
+                        return false;
+                    })
+                    .ToList();
+
+                Console.WriteLine($"[DIAG] PlayerMatches en el rango [{start:o} - {end:o}): {matchesInRange.Count}");
+                if (matchesInRange.Count > 0)
+                {
+                    foreach (var m in matchesInRange.Take(5))
+                        Console.WriteLine($"[DIAG] Sample match: PlayerId={m.PlayerId} MatchId={m.MatchId} CreatedAt={m.MatchCreatedAt}");
+                }
+                else
+                {
+                    Console.WriteLine("[DIAG] No hay matches en la BD dentro del rango. Revisar formato de MatchCreatedAt o el rango temporal.");
+                }
+
+                // Llamada real al servicio (para comparar)
                 ranking = await playerMatchService.GetRankingAsync(start, end);
-                Console.WriteLine($"[DIAG] Ranking obtenido: {ranking?.Count ?? 0} jugadores");
+                Console.WriteLine($"[DIAG] Ranking obtenido por service: {ranking?.Count ?? 0} jugadores");
                 if (ranking != null && ranking.Count > 0)
                 {
-                    var first = ranking.Take(3);
-                    Console.WriteLine("[DIAG] Primeros items del ranking:");
-                    foreach (var p in first)
-                    {
-                        Console.WriteLine($"[DIAG] PlayerId={p.PlayerId} Nick={p.PlayerNickname} Points={p.TotalPoints} Matches={p.MatchesCount}");
-                    }
+                    foreach (var p in ranking.Take(3))
+                        Console.WriteLine($"[DIAG] Top service: {p.PlayerId} / {p.PlayerNickname} => {p.TotalPoints}");
                 }
             }
             catch (Exception ex)
