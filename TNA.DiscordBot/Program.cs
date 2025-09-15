@@ -4,9 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Text;
-using System.Linq;
-using TNA.BLL.Services.Interfaces;
 using TNA.BLL.Services.Implementations;
+using TNA.BLL.Services.Interfaces;
 using TNA.DAL.DbContext;
 using TNA.DAL.Repositories.Implementations;
 using TNA.DAL.Repositories.Interfaces;
@@ -168,8 +167,8 @@ class Program
                     await channel.SendMessageAsync($"Para ver más detalles y diferentes rankings, visitá {link}");
 
                     // Etiquetar rol debajo del enlace
-                    //var roleMention = "<@&942961256099352628>";
-                    var roleMention = "<@&1417199787488575689>"; 
+                    var roleMention = "<@&942961256099352628>";
+                    //var roleMention = "<@&1417199787488575689>"; 
                     await channel.SendMessageAsync(roleMention);
 
                     Console.WriteLine("📤 Mensajes de ranking enviados correctamente.");
