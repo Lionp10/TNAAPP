@@ -5,7 +5,6 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        // Leer args para detectar --run-once (opcional, siempre lo usás en Actions)
         bool runOnce = args.Contains("--run-once");
 
         var token = Environment.GetEnvironmentVariable("DISCORD_TOKEN");

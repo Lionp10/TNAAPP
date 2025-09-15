@@ -19,14 +19,11 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Restore dependencies (Discord Bot only)
+        run: dotnet restore ./TNA.DiscordBot/TNA.DiscordBot.csproj
 
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
+      - name: Build (Discord Bot only)
+        run: dotnet build --no-restore --configuration Release ./TNA.DiscordBot/TNA.DiscordBot.csproj
 
       - name: Run Discord Bot
         env:
-          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-          DISCORD_CHANNEL_ID: "1416992053300035636"
-        run: dotnet run --project ./TNA.DiscordBot/TNA.DiscordBot.csproj --configuration Release -- --run-once
