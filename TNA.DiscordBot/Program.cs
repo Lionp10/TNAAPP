@@ -68,19 +68,21 @@ class Program
         {
             Console.WriteLine($"✅ {client.CurrentUser} conectado a Discord.");
 
+            // Usar fecha completa UTC del día actual y tomar el día anterior completo como rango
+            var endDateUtc = DateTimeOffset.UtcNow.Date;      // ej: 2025-09-15T00:00:00Z
+            var startDateUtc = endDateUtc.AddDays(-1);        // día anterior completo
+            var displayDate = endDateUtc.ToString("dd/MM/yyyy"); // para título (sin "UTC")
+
             // Esperar para que caché de canales se estabilice
             await Task.Delay(2000);
 
-            // Obtener ranking del último día: [UtcNow.AddDays(-1), UtcNow)
+            // Obtener ranking del último día: [startDateUtc, endDateUtc)
             List<TNA.BLL.DTOs.PlayerRankingDTO> ranking = new();
             try
             {
                 using var scope = host.Services.CreateScope();
                 var playerMatchService = scope.ServiceProvider.GetRequiredService<IPlayerMatchService>();
                 var db = scope.ServiceProvider.GetRequiredService<TNADbContext>();
-
-                var end = DateTimeOffset.UtcNow;
-                var start = end.AddDays(-1);
 
                 // DIAGNÓSTICO: contar PlayerMatches en la BD y en el rango
                 var allMatches = await db.PlayerMatches.AsNoTracking().ToListAsync();
@@ -89,46 +91,29 @@ class Program
                 var matchesInRange = allMatches
                     .Where(pm =>
                     {
-                        if (DateTimeOffset.TryParse(pm.MatchCreatedAt, out var dt)) return dt >= start && dt < end;
+                        if (DateTimeOffset.TryParse(pm.MatchCreatedAt, out var dt)) return dt >= startDateUtc && dt < endDateUtc;
                         return false;
                     })
                     .ToList();
 
-                Console.WriteLine($"[DIAG] PlayerMatches en el rango [{start:o} - {end:o}): {matchesInRange.Count}");
-                if (matchesInRange.Count > 0)
-                {
-                    foreach (var m in matchesInRange.Take(5))
-                        Console.WriteLine($"[DIAG] Sample match: PlayerId={m.PlayerId} MatchId={m.MatchId} CreatedAt={m.MatchCreatedAt}");
-                }
-                else
-                {
-                    Console.WriteLine("[DIAG] No hay matches en la BD dentro del rango. Revisar formato de MatchCreatedAt o el rango temporal.");
-                }
+                Console.WriteLine($"[DIAG] PlayerMatches en el rango [{startDateUtc:o} - {endDateUtc:o}): {matchesInRange.Count}");
 
-                // Llamada real al servicio (para comparar)
-                ranking = await playerMatchService.GetRankingAsync(start, end);
+                // Llamada real al servicio
+                ranking = await playerMatchService.GetRankingAsync(startDateUtc, endDateUtc);
                 Console.WriteLine($"[DIAG] Ranking obtenido por service: {ranking?.Count ?? 0} jugadores");
-                if (ranking != null && ranking.Count > 0)
-                {
-                    foreach (var p in ranking.Take(3))
-                        Console.WriteLine($"[DIAG] Top service: {p.PlayerId} / {p.PlayerNickname} => {p.TotalPoints}");
-                }
             }
             catch (Exception ex)
             {
                 Console.WriteLine("❌ Error obteniendo ranking desde DB: " + ex);
             }
 
-            // Intentar obtener el canal de varias formas y mostrar diagnóstico
+            // Intentar obtener el canal
             IMessageChannel? channel = null;
             try
             {
                 channel = client.GetChannel(channelId) as IMessageChannel;
-                Console.WriteLine($"[DIAG] client.GetChannel({channelId}) returned {(channel == null ? "null" : "non-null")}");
-
                 if (channel == null)
                 {
-                    // Buscar en guilds por si no está en caché global
                     foreach (var g in client.Guilds)
                     {
                         try
@@ -137,14 +122,10 @@ class Program
                             if (textCh != null)
                             {
                                 channel = textCh;
-                                Console.WriteLine($"[DIAG] Canal encontrado en guild {g.Id} / {g.Name}");
                                 break;
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"[DIAG] Error buscando canal en guild {g.Id}: {ex.Message}");
-                        }
+                        catch { }
                     }
                 }
             }
@@ -153,45 +134,45 @@ class Program
                 Console.WriteLine("❌ Error buscando canal: " + ex);
             }
 
-            if (channel != null)
+            if (channel == null)
             {
-                try
-                {
-                    if (ranking is null || ranking.Count == 0)
-                    {
-                        var info = $"📢 Ranking diario ({DateTimeOffset.UtcNow:dd/MM/yyyy} UTC): no se encontraron partidas en las últimas 24h.";
-                        Console.WriteLine("[DIAG] Ranking vacío, enviando mensaje informativo.");
-                        await channel.SendMessageAsync(info);
-                    }
-                    else
-                    {
-                        // Enviar título
-                        var header = $"📢 Ranking diario ({DateTimeOffset.UtcNow:dd/MM/yyyy} UTC) — Total: {ranking.Count} jugadores";
-                        await channel.SendMessageAsync(header);
+                Console.WriteLine("❌ No se encontró el canal especificado. Revisa ID/permiso/bot en servidor.");
+                if (readyTcs != null) readyTcs.TrySetResult(true);
+                return;
+            }
 
-                        // Construir mensajes en formato tabla y enviarlos por chunks
-                        var messages = BuildTableMessages(ranking);
-                        foreach (var msg in messages)
-                        {
-                            await channel.SendMessageAsync(msg);
-                            // Pequeña pausa para evitar rate limits si envías muchos mensajes
-                            await Task.Delay(250);
-                        }
-                        Console.WriteLine("📤 Mensajes de ranking enviados correctamente.");
-                    }
-                }
-                catch (Exception ex)
+            try
+            {
+                if (ranking == null || ranking.Count == 0)
                 {
-                    Console.WriteLine("❌ Error enviando el mensaje: " + ex);
+                    var info = $"📢 Ranking diario ({displayDate}) — Total: 0 jugadores\nNo se encontraron partidas en el día anterior ({startDateUtc:dd/MM/yyyy}).";
+                    await channel.SendMessageAsync(info);
+                    Console.WriteLine("[DIAG] Ranking vacío, enviado aviso.");
+                }
+                else
+                {
+                    // Enviar título sin "UTC"
+                    var header = $"📢 Ranking diario ({displayDate}) — Total: {ranking.Count} jugadores";
+                    await channel.SendMessageAsync(header);
+
+                    // Construir y enviar tabla (columnas: #, Nickname, Partidas, Kills, Daño, Puntos)
+                    var messages = BuildTableMessagesOrdered(ranking);
+                    foreach (var msg in messages)
+                    {
+                        await channel.SendMessageAsync(msg);
+                        await Task.Delay(200);
+                    }
+
+                    // Mensaje final con enlace
+                    var footer = "Para ver más detalles y diferentes rankings, visitá www.tnaesport.somee.com";
+                    await channel.SendMessageAsync(footer);
+
+                    Console.WriteLine("📤 Mensajes de ranking enviados correctamente.");
                 }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("❌ No se encontró el canal especificado en caché ni en los guilds. Posibles causas:");
-                Console.WriteLine("  - El bot no está en el servidor correcto.");
-                Console.WriteLine("  - El ID del canal es incorrecto.");
-                Console.WriteLine("  - Permisos del bot: no puede ver el canal.");
-                Console.WriteLine("  - La caché aún no se ha poblado (intenta aumentar el delay).");
+                Console.WriteLine("❌ Error enviando el ranking: " + ex);
             }
 
             if (readyTcs != null)
@@ -207,7 +188,7 @@ class Program
         {
             try
             {
-                await readyTcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                await readyTcs.Task.WaitAsync(TimeSpan.FromSeconds(45));
             }
             catch (TimeoutException)
             {
@@ -231,26 +212,25 @@ class Program
             await Task.Delay(-1);
     }
 
-    // Helper: crea una lista de mensajes (cada uno dentro de ``` ```), con formato tipo tabla.
-    // Se encarga de partir en chunks < ~2000 caracteres para Discord.
-    static List<string> BuildTableMessages(List<TNA.BLL.DTOs.PlayerRankingDTO> ranking)
+    // Build messages with order: #, Nickname, Partidas, Kills, Daño, Puntos
+    static List<string> BuildTableMessagesOrdered(List<TNA.BLL.DTOs.PlayerRankingDTO> ranking)
     {
-        const int MaxMessageLen = 1900; // margen de seguridad
-        // Column widths
+        const int MaxMessageLen = 1900;
         int posW = 3;
-        int ptsW = 6;
-        int matchesW = 7;
-        int killsW = 5;
-        int nickMax = Math.Min(40, ranking.Max(r => (r.PlayerNickname ?? r.PlayerId ?? r.PlayerId).Length));
+        int nickMax = Math.Min(40, ranking.Max(r => (r.PlayerNickname ?? r.PlayerId).Length));
         nickMax = Math.Max(8, nickMax);
+        int matchesW = 7;
+        int killsW = 6;
+        int damageW = 10;
+        int ptsW = 6;
 
-        string headerLine = $"{"#".PadRight(posW)} | {"Nickname".PadRight(nickMax)} | {"Pts".PadLeft(ptsW)} | {"Matches".PadLeft(matchesW)} | {"Kills".PadLeft(killsW)}";
-        string separator = new string('-', headerLine.Length);
+        string header = $"{ "#".PadRight(posW)} | { "Nickname".PadRight(nickMax)} | { "Partidas".PadLeft(matchesW)} | { "Kills".PadLeft(killsW)} | { "Daño".PadLeft(damageW)} | { "Puntos".PadLeft(ptsW)}";
+        string sep = new string('-', header.Length);
 
         var messages = new List<string>();
         var sb = new StringBuilder();
-        sb.AppendLine(headerLine);
-        sb.AppendLine(separator);
+        sb.AppendLine(header);
+        sb.AppendLine(sep);
 
         int pos = 1;
         foreach (var p in ranking)
@@ -258,19 +238,19 @@ class Program
             var nick = string.IsNullOrWhiteSpace(p.PlayerNickname) ? p.PlayerId : p.PlayerNickname;
             if (nick.Length > nickMax) nick = nick.Substring(0, nickMax - 1) + "…";
 
-            var ptsStr = (p.TotalPoints).ToString("F2");
-            var matchesStr = p.MatchesCount.ToString();
-            var killsStr = p.TotalKills.ToString();
+            var partidas = p.MatchesCount.ToString();
+            var kills = p.TotalKills.ToString();
+            var dano = Math.Round(p.TotalDamageDealt, 0).ToString();
+            var puntos = p.TotalPoints.ToString("F2");
 
-            var line = $"{pos.ToString().PadRight(posW)} | {nick.PadRight(nickMax)} | {ptsStr.PadLeft(ptsW)} | {matchesStr.PadLeft(matchesW)} | {killsStr.PadLeft(killsW)}";
-            // Si excede el chunk, cerrar y empezar uno nuevo
-            if (sb.Length + line.Length + 10 > MaxMessageLen) // +10 para las triple backticks
+            var line = $"{pos.ToString().PadRight(posW)} | {nick.PadRight(nickMax)} | {partidas.PadLeft(matchesW)} | {kills.PadLeft(killsW)} | {dano.PadLeft(damageW)} | {puntos.PadLeft(ptsW)}";
+
+            if (sb.Length + line.Length + 10 > MaxMessageLen)
             {
-                var full = "```" + sb.ToString().TrimEnd() + "```";
-                messages.Add(full);
+                messages.Add("```" + sb.ToString().TrimEnd() + "```");
                 sb.Clear();
-                sb.AppendLine(headerLine);
-                sb.AppendLine(separator);
+                sb.AppendLine(header);
+                sb.AppendLine(sep);
             }
 
             sb.AppendLine(line);
@@ -278,10 +258,7 @@ class Program
         }
 
         if (sb.Length > 0)
-        {
-            var full = "```" + sb.ToString().TrimEnd() + "```";
-            messages.Add(full);
-        }
+            messages.Add("```" + sb.ToString().TrimEnd() + "```");
 
         return messages;
     }
