@@ -165,24 +165,39 @@ class Program
                     }
                     else
                     {
-                        // Enviar título
-                        var header = $"📢 Ranking diario ({DateTimeOffset.UtcNow:dd/MM/yyyy} UTC) — Total: {ranking.Count} jugadores";
-                        await channel.SendMessageAsync(header);
+                        // 1) Embed resumen Top 10 (puntos en negrita)
+                        var top = ranking.Take(10).ToList();
+                        var embed = new EmbedBuilder()
+                            .WithTitle($"📢 Ranking diario ({DateTimeOffset.UtcNow:dd/MM/yyyy} UTC) — Top {top.Count}")
+                            .WithColor(Color.DarkBlue)
+                            .WithFooter($"Total jugadores: {ranking.Count}");
 
-                        // Construir mensajes en formato tabla y enviarlos por chunks
-                        var messages = BuildTableMessages(ranking);
-                        foreach (var msg in messages)
+                        int pos = 1;
+                        foreach (var p in top)
                         {
-                            await channel.SendMessageAsync(msg);
-                            // Pequeña pausa para evitar rate limits si envías muchos mensajes
-                            await Task.Delay(250);
+                            var nick = string.IsNullOrWhiteSpace(p.PlayerNickname) ? p.PlayerId : p.PlayerNickname;
+                            string fieldName = $"#{pos}  {nick}";
+                            string fieldValue =
+                                $"Partidas: {p.MatchesCount} • Derr: {p.TotalDBNOs} • Asist: {p.TotalAssists} • K: {p.TotalKills}\n" +
+                                $"HS: {p.TotalHeadshotsKills} • Daño: {p.TotalDamageDealt:F0} • Rev: {p.TotalRevives} • TK: {p.TotalTeamKill}\n" +
+                                $"Tiempo: {FormatTime(p.TotalTimeSurvived)} • Pos.prom: {p.AverageWinPlace}  • **{p.TotalPoints:F2} pts**";
+                            embed.AddField(fieldName, fieldValue, inline: false);
+                            pos++;
                         }
-                        Console.WriteLine("📤 Mensajes de ranking enviados correctamente.");
+
+                        await channel.SendMessageAsync(embed: embed.Build());
+
+                        // 2) Archivo con la tabla completa (monoespaciada)
+                        var fullText = BuildFullTableText(ranking);
+                        var bytes = Encoding.UTF8.GetBytes(fullText);
+                        using var ms = new System.IO.MemoryStream(bytes);
+                        await channel.SendFileAsync(ms, "ranking.txt", $"Ranking completo ({DateTimeOffset.UtcNow:dd/MM/yyyy} UTC) — Total: {ranking.Count} jugadores");
+                        Console.WriteLine("[DIAG] Embed top y archivo con tabla completa enviados.");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("❌ Error enviando el mensaje: " + ex);
+                    Console.WriteLine("❌ Error enviando el ranking: " + ex);
                 }
             }
             else
@@ -231,58 +246,73 @@ class Program
             await Task.Delay(-1);
     }
 
-    // Helper: crea una lista de mensajes (cada uno dentro de ``` ```), con formato tipo tabla.
-    // Se encarga de partir en chunks < ~2000 caracteres para Discord.
-    static List<string> BuildTableMessages(List<TNA.BLL.DTOs.PlayerRankingDTO> ranking)
+    static string FormatTime(decimal secondsDecimal)
     {
-        const int MaxMessageLen = 1900; // margen de seguridad
+        try
+        {
+            var seconds = (double)secondsDecimal;
+            var ts = TimeSpan.FromSeconds(seconds);
+            // Si el valor es muy grande, mostrar días y hh:mm:ss
+            if (ts.TotalDays >= 1)
+                return $"{(int)ts.TotalDays}d {ts:hh\\:mm\\:ss}";
+            return ts.ToString(@"hh\:mm\:ss");
+        }
+        catch
+        {
+            return "00:00:00";
+        }
+    }
+
+    // Construye tabla completa en texto monoespaciado
+    static string BuildFullTableText(List<TNA.BLL.DTOs.PlayerRankingDTO> ranking)
+    {
         // Column widths
         int posW = 3;
-        int ptsW = 6;
+        int nickW = Math.Min(40, Math.Max(10, ranking.Max(r => (r.PlayerNickname ?? r.PlayerId).Length)));
         int matchesW = 7;
-        int killsW = 5;
-        int nickMax = Math.Min(40, ranking.Max(r => (r.PlayerNickname ?? r.PlayerId ?? r.PlayerId).Length));
-        nickMax = Math.Max(8, nickMax);
+        int dbnoW = 6;
+        int assistsW = 8;
+        int killsW = 6;
+        int hsW = 8;
+        int dmgW = 10;
+        int revW = 6;
+        int tkW = 8;
+        int timeW = 11;
+        int winW = 5;
+        int ptsW = 6;
 
-        string headerLine = $"{"#".PadRight(posW)} | {"Nickname".PadRight(nickMax)} | {"Pts".PadLeft(ptsW)} | {"Matches".PadLeft(matchesW)} | {"Kills".PadLeft(killsW)}";
-        string separator = new string('-', headerLine.Length);
+        string header = $"{ "#".PadRight(posW)} | { "Jugador".PadRight(nickW)} | { "Partidas".PadLeft(matchesW)} | { "Derribos".PadLeft(dbnoW)} | { "Asist".PadLeft(assistsW)} | { "Kills".PadLeft(killsW)} | { "Headshots".PadLeft(hsW)} | { "Daño".PadLeft(dmgW)} | { "Revives".PadLeft(revW)} | { "TeamK".PadLeft(tkW)} | { "Tiempo".PadLeft(timeW)} | { "Pos." .PadLeft(winW)} | { "Puntos".PadLeft(ptsW)}";
+        var sep = new string('-', header.Length);
 
-        var messages = new List<string>();
         var sb = new StringBuilder();
-        sb.AppendLine(headerLine);
-        sb.AppendLine(separator);
+        sb.AppendLine(header);
+        sb.AppendLine(sep);
 
         int pos = 1;
         foreach (var p in ranking)
         {
             var nick = string.IsNullOrWhiteSpace(p.PlayerNickname) ? p.PlayerId : p.PlayerNickname;
-            if (nick.Length > nickMax) nick = nick.Substring(0, nickMax - 1) + "…";
+            if (nick.Length > nickW) nick = nick.Substring(0, nickW - 1) + "…";
 
-            var ptsStr = (p.TotalPoints).ToString("F2");
-            var matchesStr = p.MatchesCount.ToString();
-            var killsStr = p.TotalKills.ToString();
-
-            var line = $"{pos.ToString().PadRight(posW)} | {nick.PadRight(nickMax)} | {ptsStr.PadLeft(ptsW)} | {matchesStr.PadLeft(matchesW)} | {killsStr.PadLeft(killsW)}";
-            // Si excede el chunk, cerrar y empezar uno nuevo
-            if (sb.Length + line.Length + 10 > MaxMessageLen) // +10 para las triple backticks
-            {
-                var full = "```" + sb.ToString().TrimEnd() + "```";
-                messages.Add(full);
-                sb.Clear();
-                sb.AppendLine(headerLine);
-                sb.AppendLine(separator);
-            }
+            var line =
+                $"{pos.ToString().PadRight(posW)} | " +
+                $"{nick.PadRight(nickW)} | " +
+                $"{p.MatchesCount.ToString().PadLeft(matchesW)} | " +
+                $"{p.TotalDBNOs.ToString().PadLeft(dbnoW)} | " +
+                $"{p.TotalAssists.ToString().PadLeft(assistsW)} | " +
+                $"{p.TotalKills.ToString().PadLeft(killsW)} | " +
+                $"{p.TotalHeadshotsKills.ToString().PadLeft(hsW)} | " +
+                $"{Math.Round(p.TotalDamageDealt, 0).ToString().PadLeft(dmgW)} | " +
+                $"{p.TotalRevives.ToString().PadLeft(revW)} | " +
+                $"{p.TotalTeamKill.ToString().PadLeft(tkW)} | " +
+                $"{FormatTime(p.TotalTimeSurvived).PadLeft(timeW)} | " +
+                $"{p.AverageWinPlace.ToString().PadLeft(winW)} | " +
+                $"{p.TotalPoints.ToString("F2").PadLeft(ptsW)}";
 
             sb.AppendLine(line);
             pos++;
         }
 
-        if (sb.Length > 0)
-        {
-            var full = "```" + sb.ToString().TrimEnd() + "```";
-            messages.Add(full);
-        }
-
-        return messages;
+        return sb.ToString();
     }
 }
