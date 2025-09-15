@@ -10,6 +10,13 @@
   <ItemGroup>
     <PackageReference Include="Discord.Net" Version="3.18.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
+    <!-- Añadido: EF Core provider para SQL Server (necesario por AddDbContext/UseSqlServer) -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TNA.BLL\TNA.BLL.csproj" />
+    <ProjectReference Include="..\TNA.DAL\TNA.DAL.csproj" />
   </ItemGroup>
 
 </Project>
