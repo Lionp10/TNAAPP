@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using System.Threading.Tasks;
 
 class Program
 {
@@ -36,6 +37,9 @@ class Program
             return Task.CompletedTask;
         };
 
+        // TaskCompletionSource para sincronizar cuando queremos ejecutar solo una vez.
+        TaskCompletionSource<bool>? readyTcs = runOnce ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : null;
+
         client.Ready += async () =>
         {
             Console.WriteLine($"✅ {client.CurrentUser} conectado a Discord.");
@@ -46,25 +50,56 @@ class Program
             var channel = client.GetChannel(channelId) as IMessageChannel;
             if (channel != null)
             {
-                string mensaje = $"📢 Reporte diario generado: {DateTime.UtcNow:dd/MM/yyyy HH:mm} UTC";
-                await channel.SendMessageAsync(mensaje);
-                Console.WriteLine("📤 Mensaje enviado correctamente.");
+                try
+                {
+                    string mensaje = $"📢 Reporte diario generado: {DateTime.UtcNow:dd/MM/yyyy HH:mm} UTC";
+                    await channel.SendMessageAsync(mensaje);
+                    Console.WriteLine("📤 Mensaje enviado correctamente.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("❌ Error enviando el mensaje: " + ex);
+                }
             }
             else
             {
                 Console.WriteLine("❌ No se encontró el canal especificado.");
             }
 
-            if (runOnce)
+            // Señalamos que ya terminó la operación cuando estamos en modo run-once.
+            if (readyTcs != null)
             {
-                await client.LogoutAsync();
-                await client.StopAsync();
-                Environment.Exit(0);
+                readyTcs.TrySetResult(true);
             }
         };
 
         await client.LoginAsync(TokenType.Bot, token);
         await client.StartAsync();
+
+        if (runOnce && readyTcs != null)
+        {
+            // Esperar a que el Ready complete (timeout prudente para evitar colgar indefinidamente)
+            try
+            {
+                await readyTcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            }
+            catch (TimeoutException)
+            {
+                Console.WriteLine("❌ Timeout esperando al evento Ready.");
+            }
+
+            // Desconectamos limpiamente
+            try
+            {
+                await client.LogoutAsync();
+                await client.StopAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("⚠️ Error durante logout/stop: " + ex);
+            }
+            return;
+        }
 
         if (!runOnce)
             await Task.Delay(-1); // Mantener vivo si no es modo run-once
