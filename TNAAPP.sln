@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TNA.APP", "TNA.APP\TNA.APP.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TNA.Scheduler", "TNA.Scheduler\TNA.Scheduler.csproj", "{36C2307F-11FD-48BA-B83A-584FEF85C264}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TNA.DiscordBot", "TNA.DiscordBot\TNA.DiscordBot.csproj", "{A4FA510C-0E16-412F-AB36-FFEEC31498C6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{36C2307F-11FD-48BA-B83A-584FEF85C264}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{36C2307F-11FD-48BA-B83A-584FEF85C264}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{36C2307F-11FD-48BA-B83A-584FEF85C264}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4FA510C-0E16-412F-AB36-FFEEC31498C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4FA510C-0E16-412F-AB36-FFEEC31498C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4FA510C-0E16-412F-AB36-FFEEC31498C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4FA510C-0E16-412F-AB36-FFEEC31498C6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

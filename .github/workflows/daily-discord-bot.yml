@@ -1,0 +1,32 @@
+name: Daily Discord Bot
+
+on:
+  schedule:
+    # Todos los días a las 15:00 UTC (12:00 en GMT-3)
+    - cron: "0 15 * * *"
+  workflow_dispatch:
+
+jobs:
+  run-discord-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run Discord Bot
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+        run: dotnet run --project ./TNA.DiscordBot/TNA.DiscordBot.csproj --configuration Release -- --run-once
