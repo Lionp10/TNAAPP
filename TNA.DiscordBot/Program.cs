@@ -38,7 +38,6 @@ class Program
             return;
         }
 
-        // Build a minimal host/service provider to resolve IPlayerMatchService
         using var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices((ctx, services) =>
             {
@@ -58,7 +57,7 @@ class Program
 
         client.Log += msg =>
         {
-            Console.WriteLine(msg.ToString());
+            Console.WriteLine($"[Discord.Net] {msg}");
             return Task.CompletedTask;
         };
 
@@ -71,6 +70,24 @@ class Program
             // Esperar para que caché de canales se estabilice
             await Task.Delay(2000);
 
+            // DIAGNÓSTICO: listar guilds y canales en caché
+            try
+            {
+                var guilds = client.Guilds.ToList();
+                Console.WriteLine($"[DIAG] Guilds cached: {guilds.Count}");
+                foreach (var g in guilds)
+                {
+                    Console.WriteLine($"[DIAG] Guild: Id={g.Id} Name={g.Name} TextChannels={g.TextChannels.Count()}");
+                }
+
+                var totalChannelsCached = guilds.Sum(g => g.Channels.Count);
+                Console.WriteLine($"[DIAG] Total channels cached (all guilds): {totalChannelsCached}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[DIAG] Error enumerando guilds/channels: " + ex);
+            }
+
             // Obtener ranking del último día: [UtcNow.AddDays(-1), UtcNow)
             List<TNA.BLL.DTOs.PlayerRankingDTO> ranking = new();
             try
@@ -82,13 +99,56 @@ class Program
                 var start = end.AddDays(-1);
 
                 ranking = await playerMatchService.GetRankingAsync(start, end);
+                Console.WriteLine($"[DIAG] Ranking obtenido: {ranking?.Count ?? 0} jugadores");
+                if (ranking != null && ranking.Count > 0)
+                {
+                    var first = ranking.Take(3);
+                    Console.WriteLine("[DIAG] Primeros items del ranking:");
+                    foreach (var p in first)
+                    {
+                        Console.WriteLine($"[DIAG] PlayerId={p.PlayerId} Nick={p.PlayerNickname} Points={p.TotalPoints} Matches={p.MatchesCount}");
+                    }
+                }
             }
             catch (Exception ex)
             {
                 Console.WriteLine("❌ Error obteniendo ranking desde DB: " + ex);
             }
 
-            var channel = client.GetChannel(channelId) as IMessageChannel;
+            // Intentar obtener el canal de varias formas y mostrar diagnóstico
+            IMessageChannel? channel = null;
+            try
+            {
+                channel = client.GetChannel(channelId) as IMessageChannel;
+                Console.WriteLine($"[DIAG] client.GetChannel({channelId}) returned {(channel == null ? "null" : "non-null")}");
+
+                if (channel == null)
+                {
+                    // Buscar en guilds por si no está en caché global
+                    foreach (var g in client.Guilds)
+                    {
+                        try
+                        {
+                            var textCh = g.GetTextChannel(channelId);
+                            if (textCh != null)
+                            {
+                                channel = textCh;
+                                Console.WriteLine($"[DIAG] Canal encontrado en guild {g.Id} / {g.Name}");
+                                break;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[DIAG] Error buscando canal en guild {g.Id}: {ex.Message}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("❌ Error buscando canal: " + ex);
+            }
+
             if (channel != null)
             {
                 try
@@ -97,10 +157,10 @@ class Program
                     if (ranking is null || ranking.Count == 0)
                     {
                         mensaje = $"📢 Ranking diario ({DateTimeOffset.UtcNow:dd/MM/yyyy} UTC): no se encontraron partidas en las últimas 24h.";
+                        Console.WriteLine("[DIAG] Ranking vacío, enviando mensaje informativo.");
                     }
                     else
                     {
-                        // Construir texto con top 5
                         var top = ranking.Take(5).ToList();
                         var sb = new StringBuilder();
                         sb.AppendLine($"📢 Ranking diario ({DateTimeOffset.UtcNow:dd/MM/yyyy} UTC) — Top {top.Count}:");
@@ -111,12 +171,10 @@ class Program
                             sb.AppendLine($"{pos}. {nick} — {p.TotalPoints:F2} pts — Partidas: {p.MatchesCount} — Kills: {p.TotalKills}");
                             pos++;
                         }
-                        // Añadir nota si hay más jugadores
                         if (ranking.Count > top.Count)
-                        {
                             sb.AppendLine($"... y {ranking.Count - top.Count} jugadores más.");
-                        }
                         mensaje = sb.ToString();
+                        Console.WriteLine("[DIAG] Mensaje construido, longitud: " + mensaje.Length);
                     }
 
                     await channel.SendMessageAsync(mensaje);
@@ -129,7 +187,11 @@ class Program
             }
             else
             {
-                Console.WriteLine("❌ No se encontró el canal especificado.");
+                Console.WriteLine("❌ No se encontró el canal especificado en caché ni en los guilds. Posibles causas:");
+                Console.WriteLine("  - El bot no está en el servidor correcto.");
+                Console.WriteLine("  - El ID del canal es incorrecto.");
+                Console.WriteLine("  - Permisos del bot: no puede ver el canal.");
+                Console.WriteLine("  - La caché aún no se ha poblado (intenta aumentar el delay).");
             }
 
             if (readyTcs != null)
