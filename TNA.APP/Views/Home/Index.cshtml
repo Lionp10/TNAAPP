@@ -6,28 +6,30 @@
 }
 
 <div class="container mt-4" id="rankings">
-    <div class="mb-5 d-flex justify-content-between align-items-center">
-        <div>
-            <h1 class="hero-title">Estadísticas del clan</h1>
-            <p class="hero-sub">Visualiza el rendimiento de los miembros: partidas, kills, daño y puntos de ranking.</p>
-        </div>
+    <div class="mb-5">
+        <div class="row align-items-center justify-content-between">
+            <div class="col-12 col-md-8">
+                <h1 class="hero-title">Estadísticas del clan</h1>
+                <p class="hero-sub">Visualiza el rendimiento de los miembros: partidas, kills, daño y puntos de ranking.</p>
+            </div>
 
-        <div>
-            <form id="filterForm" asp-action="Index" method="get" class="d-inline">
-                <div class="input-group">
-                    <select name="range" class="form-select" id="ddlPeriod">
-                        @foreach (var item in Model.Ranges)
-                        {
-                            <option value="@item.Value" selected="@(item.Value == Model.SelectedRange ? "selected" : null)">@item.Text</option>
-                        }
-                    </select>
-                    <noscript>
-                        <button type="submit" class="btn btn-outline-secondary">Filtrar</button>
-                    </noscript>
+            <div class="col-12 col-md-auto mt-3 mt-md-0">
+                <form id="filterForm" asp-action="Index" method="get" class="d-inline">
+                    <div class="input-group">
+                        <select name="range" class="form-select" id="ddlPeriod">
+                            @foreach (var item in Model.Ranges)
+                            {
+                                <option value="@item.Value" selected="@(item.Value == Model.SelectedRange ? "selected" : null)">@item.Text</option>
+                            }
+                        </select>
+                        <noscript>
+                            <button type="submit" class="btn btn-outline-secondary">Filtrar</button>
+                        </noscript>
+                    </div>
+                </form>
+                <div class="small text-muted-tna mt-2 text-md-end">
+                    Rango seleccionado: <strong>@Model.RangeDisplay</strong>
                 </div>
-            </form>
-            <div class="small text-muted-tna mt-1">
-                Rango seleccionado: <strong>@Model.RangeDisplay</strong>
             </div>
         </div>
     </div>

@@ -280,12 +280,136 @@ namespace TNA.APP.Controllers
                 }
 
                 ViewBag.Message = userMessage;
-                return View();
+                return View();  
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generando token de recuperación para {Email}", model.Email);
                 ModelState.AddModelError(string.Empty, "Error inesperado al procesar la solicitud.");
+                return View(model);
+            }
+        }
+
+        // GET: /Auth/ResetPassword
+        [HttpGet]
+        public async Task<IActionResult> ResetPassword(string? token, string? email)
+        {
+            if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(email))
+            {
+                ViewBag.Error = "Enlace inválido o incompleto.";
+                return View(new ResetPasswordViewModel { Email = email ?? string.Empty, Token = token ?? string.Empty });
+            }
+
+            try
+            {
+                var decoded = WebUtility.UrlDecode(token);
+                var payload = _protector.Unprotect(decoded);
+                var parts = payload.Split('|');
+                if (parts.Length < 2)
+                {
+                    ViewBag.Error = "Token inválido.";
+                    return View(new ResetPasswordViewModel { Email = email, Token = token });
+                }
+
+                if (!int.TryParse(parts[0], out var userId) || !long.TryParse(parts[1], out var expiryUnix))
+                {
+                    ViewBag.Error = "Token inválido.";
+                    return View(new ResetPasswordViewModel { Email = email, Token = token });
+                }
+
+                var expiry = DateTimeOffset.FromUnixTimeSeconds(expiryUnix);
+                if (expiry < DateTimeOffset.UtcNow)
+                {
+                    ViewBag.Error = "El enlace ha expirado. Solicita uno nuevo.";
+                    return View(new ResetPasswordViewModel { Email = email, Token = token });
+                }
+
+                // Verificar que el usuario exista y el email coincida (mejora de seguridad)
+                var userDto = await _userService.GetByIdAsync(userId).ConfigureAwait(false);
+                if (userDto == null || !string.Equals(userDto.Email, email, StringComparison.OrdinalIgnoreCase))
+                {
+                    ViewBag.Error = "Enlace inválido o usuario no encontrado.";
+                    return View(new ResetPasswordViewModel { Email = email, Token = token });
+                }
+
+                var vm = new ResetPasswordViewModel
+                {
+                    Email = email,
+                    Token = token
+                };
+
+                return View(vm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error validando token de reset.");
+                ViewBag.Error = "Enlace inválido o ha ocurrido un error procesando el token.";
+                return View(new ResetPasswordViewModel { Email = email ?? string.Empty, Token = token ?? string.Empty });
+            }
+        }
+
+        // POST: /Auth/ResetPassword
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model, CancellationToken cancellationToken = default)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            try
+            {
+                // Validar token
+                var decoded = WebUtility.UrlDecode(model.Token);
+                var payload = _protector.Unprotect(decoded);
+                var parts = payload.Split('|');
+                if (parts.Length < 2)
+                {
+                    ModelState.AddModelError(string.Empty, "Token inválido.");
+                    return View(model);
+                }
+
+                if (!int.TryParse(parts[0], out var userId) || !long.TryParse(parts[1], out var expiryUnix))
+                {
+                    ModelState.AddModelError(string.Empty, "Token inválido.");
+                    return View(model);
+                }
+
+                var expiry = DateTimeOffset.FromUnixTimeSeconds(expiryUnix);
+                if (expiry < DateTimeOffset.UtcNow)
+                {
+                    ModelState.AddModelError(string.Empty, "El enlace ha expirado. Solicita uno nuevo.");
+                    return View(model);
+                }
+
+                // Obtener usuario desde repositorio para actualizar hash
+                var repo = HttpContext.RequestServices.GetService(typeof(TNA.DAL.Repositories.Interfaces.IUserRepository)) as TNA.DAL.Repositories.Interfaces.IUserRepository;
+                if (repo == null)
+                {
+                    _logger.LogError("IUserRepository no está disponible para ResetPassword.");
+                    ModelState.AddModelError(string.Empty, "Error interno al procesar la solicitud.");
+                    return View(model);
+                }
+
+                var userEntity = await repo.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+                if (userEntity == null || !string.Equals(userEntity.Email, model.Email, StringComparison.OrdinalIgnoreCase))
+                {
+                    ModelState.AddModelError(string.Empty, "Usuario no encontrado o email no coincide.");
+                    return View(model);
+                }
+
+                // Hashear y actualizar contraseña
+                userEntity.PasswordHash = _passwordHasher.HashPassword(userEntity, model.Password);
+                await repo.UpdateAsync(userEntity, cancellationToken).ConfigureAwait(false);
+
+                _logger.LogInformation("Contraseña restablecida para UserId {UserId}", userId);
+
+                // Indicar éxito y redirigir a login (Index del Auth)
+                TempData["Message"] = "Contraseña restablecida correctamente. Ahora puedes iniciar sesión.";
+                return RedirectToAction("Index", "Auth");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error procesando ResetPassword para {Email}", model.Email);
+                ModelState.AddModelError(string.Empty, "Error inesperado al restablecer la contraseña.");
                 return View(model);
             }
         }

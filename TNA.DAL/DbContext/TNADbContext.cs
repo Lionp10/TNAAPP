@@ -35,7 +35,6 @@ namespace TNA.DAL.DbContext
                 b.Property(p => p.Nickname).HasMaxLength(50).IsRequired();
                 b.Property(p => p.PlayerId).HasMaxLength(128).IsRequired();
                 b.Property(p => p.ClanId).HasMaxLength(128).IsRequired();
-                b.Property(p => p.Email).HasMaxLength(50);
                 b.Property(p => p.ProfileImage).HasColumnType("nvarchar(max)");
             });
 
