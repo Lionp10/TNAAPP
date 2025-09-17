@@ -231,14 +231,16 @@ namespace TNA.BLL.Services.Implementations
                             continue;
                         }
 
-                        // NEW: check matchType and skip arcade matches
+                        // check matchType and skip undesired match types (arcade, custom)
                         var matchType = matchAttributes.TryGetProperty("matchType", out var matchTypeEl) && matchTypeEl.ValueKind == JsonValueKind.String
                             ? matchTypeEl.GetString() ?? string.Empty
                             : string.Empty;
 
-                        if (string.Equals(matchType, "arcade", StringComparison.OrdinalIgnoreCase))
+                        if (!string.IsNullOrEmpty(matchType) &&
+                            (string.Equals(matchType, "arcade", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(matchType, "custom", StringComparison.OrdinalIgnoreCase)))
                         {
-                            _logger.LogInformation("Skipping match {MatchId} of type 'arcade'.", matchId);
+                            _logger.LogInformation("Skipping match {MatchId} of type '{MatchType}'.", matchId, matchType);
                             continue;
                         }
 
