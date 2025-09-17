@@ -153,11 +153,12 @@ namespace TNA.APP.Controllers
                 Id = user.Id,
                 Nickname = user.Nickname,
                 Email = user.Email,
-                MemberId = user.MemberId
+                // Asignar MemberId SOLO si el usuario tiene role 3 y MemberId no es null
+                MemberId = (user.RoleId == 3 && user.MemberId.HasValue) ? user.MemberId : null
             };
 
-            // Solo cargar datos de ClanMember y sus redes si el usuario tiene RoleId == 3.
-            if (user.MemberId.HasValue && user.RoleId == 3)
+            // Solo cargar datos de ClanMember y sus redes si el usuario tiene RoleId == 3 y MemberId presente.
+            if (user.RoleId == 3 && user.MemberId.HasValue)
             {
                 var db = HttpContext.RequestServices.GetService(typeof(TNADbContext)) as TNADbContext;
                 if (db != null)
