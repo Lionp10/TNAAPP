@@ -338,31 +338,41 @@
                     <li>Puntuación final = BaseScore × reliability. Se escala a 0–10 y se redondea a 2 decimales.</li>
                 </ul>
 
-                <h6>Ejemplo 1 (claro):</h6>
-                <p>Supongamos que los máximos observados en el grupo son:
-                    <em>maxKills=5, maxDamage=2000, maxNockdowns=1, maxAssists=1, maxHeadshots=1, maxRevives=0.5, maxTime=2000, maxTeamKills=1, minWin=1, maxWin=8</em>.</p>
+                <h6>Cómo considera el sistema la cantidad de partidas (MatchesCount)</h6>
+                <ul>
+                    <li>MatchesCount no suma puntos directamente: impacta en las medias (totales ÷ partidas) y en el factor de confiabilidad (<code>reliability</code>).</li>
+                    <li>Medias: menos partidas ⇒ medias menos representativas (puede inflar o bajar el BaseScore según los totales).</li>
+                    <li>Confiabilidad: se aplica una curva logarítmica
+                        <pre>reliability = Math.Min(1.0, Math.Log(MatchesCount + 1) / Math.Log(11))</pre>
+                        - Matches = 0 → reliability = 0 (puntos 0).  
+                        - Matches = 1 → ≈ 0.29.  
+                        - Matches = 5 → ≈ 0.75.  
+                        - Matches ≥ 10 → 1.0 (tope).
+                    </li>
+                    <li>Orden y desempate: además del TotalPoints, se usa MatchesCount como primer criterio de desempate (más partidas favorece).</li>
+                </ul>
+
+                <h6>Ejemplos rápidos</h6>
+                <p>Si <strong>BaseScore = 0.80</strong> (antes de reliability):</p>
+                <ul>
+                    <li>Matches = 1 → final = 0.80 × 0.29 ≈ 0.23 → Puntos ≈ <strong>2.31</strong></li>
+                    <li>Matches = 5 → final = 0.80 × 0.75 ≈ 0.60 → Puntos ≈ <strong>6.00</strong></li>
+                    <li>Matches = 10 → final = 0.80 × 1.00 = 0.80 → Puntos = <strong>8.00</strong></li>
+                </ul>
+
+                <h6>Ejemplo completo (recordatorio)</h6>
                 <p>Jugador "Alpha" (promedios por partido): Nockdowns=0.8, Asist=0.5, Kills=3.2, Headshots=0.8, Damage=1500, Revives=0.1, Time=1800, WinPlace=4.0, TeamKills=0. Matches=8.</p>
                 <ol>
-                    <li>Normalizaciones:
-                        <pre>normKills=3.2/5=0.64, normDamage=1500/2000=0.75, normNockdowns=0.8, ... normWin=(8-4)/(8-1)=0.571</pre>
-                    </li>
-                    <li>Score positivo = Σ(peso × normalizado) ≈ 0.6682</li>
-                    <li>Penalty team-kill = 0.25 × 0 = 0 → baseScore = 0.6682</li>
-                    <li>Reliability = ln(8+1)/ln(11) ≈ 0.916 → finalNormalized ≈ 0.6682 × 0.916 ≈ 0.612</li>
-                    <li>Puntos finales = 0.612 × 10 = <strong>6.12</strong></li>
-                </ol>
-
-                <h6>Ejemplo 2 (team-kills y más partidos):</h6>
-                <p>Jugador "Bravo": positiveScore hipotético = 0.80, AvgTeamKills = 0.5, Matches=12.</p>
-                <ol>
-                    <li>Penalty = 0.25 × 0.5 = 0.125 → baseScore = 0.80 - 0.125 = 0.675</li>
-                    <li>Reliability (12 partidas) = 1.0 → finalNormalized = 0.675</li>
-                    <li>Puntos finales = 6.75</li>
+                    <li>Normalizaciones: <code>normKills=3.2/5=0.64</code>, <code>normDamage=1500/2000=0.75</code>, <code>normNockdowns=0.8</code>, <code>normWin=(8-4)/(8-1)=0.571</code>.</li>
+                    <li>Score positivo ≈ 0.6682 → penalty 0 → baseScore = 0.6682.</li>
+                    <li>Reliability = ln(8+1)/ln(11) ≈ 0.916 → finalNormalized ≈ 0.612.</li>
+                    <li>Puntos finales = 0.612 × 10 = <strong>6.12</strong>.</li>
                 </ol>
 
                 <p>Notas:</p>
                 <ul>
-                    <li>El ranking diario, semanal, mensual e histórico usa el mismo algoritmo; solo cambia el conjunto de partidos considerado (por rango de fechas).</li>
+                    <li>El mismo algoritmo se aplica a diario, semanal, mensual e histórico; cambia sólo el conjunto de partidas usado para calcular medias y máximos.</li>
+                    <li>Si prefieres otra curva de confiabilidad (p. ej. tope a 5 partidas en vez de 10) puedo proponerte y cambiar la fórmula en <code>PlayerMatchService.GetRankingAsync</code>.</li>
                 </ul>
             </div>
             <div class="modal-footer">
