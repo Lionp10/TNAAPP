@@ -421,3 +421,176 @@
                 
             }
 
+
+/* Mejoras adicionales para la ventana modal (coherente con el diseño "glass") */
+
+/* Más control sobre el backdrop para mantener la estética oscura y el efecto blur */
+.modal-backdrop.show {
+    background-color: rgba(2, 6, 23, 0.64); /* ligeramente más oscuro que el por defecto */
+    backdrop-filter: blur(6px) saturate(120%);
+}
+
+/* Limitar ancho y mejorar centrado de los diálogos grandes */
+.modal-dialog.modal-lg {
+    max-width: 820px;
+    margin: 1.5rem auto;
+}
+
+/* Ajustes finos para el contenido glass del modal */
+.glass-modal {
+    background: linear-gradient(180deg, rgba(15,23,42,0.92), rgba(15,23,42,0.98));
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    border-radius: 12px;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.7);
+    backdrop-filter: blur(14px) saturate(120%);
+    overflow: hidden;
+}
+
+/* Header: separación, línea sutil y título destacado */
+.glass-modal .modal-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(148,163,184,0.06);
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Título más legible y consistente con tarjetas */
+.glass-modal .modal-title {
+    color: var(--text-primary);
+    font-weight: 800;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* Close button: visible, contraste y hit-area cómodo */
+.glass-modal .btn-close {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.glass-modal .btn-close:hover,
+.glass-modal .btn-close:focus {
+    background: rgba(255,255,255,0.03);
+    border-color: rgba(148,163,184,0.08);
+    color: var(--text-primary);
+    outline: none;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+}
+
+/* Cuerpo: scrollable con estilo de scrollbar y padding confortable */
+.glass-modal .modal-body {
+    padding: 1rem 1.25rem;
+    max-height: calc(72vh);
+    overflow-y: auto;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* Scrollbar dentro del modal (webkit) */
+.glass-modal .modal-body::-webkit-scrollbar {
+    width: 10px;
+}
+
+.glass-modal .modal-body::-webkit-scrollbar-track {
+    background: rgba(15,23,42,0.7);
+    border-radius: 6px;
+}
+
+.glass-modal .modal-body::-webkit-scrollbar-thumb {
+    background: rgba(148,163,184,0.18);
+    border-radius: 6px;
+}
+
+.glass-modal .modal-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(148,163,184,0.28);
+}
+
+/* Listas y pre/code: mayor legibilidad */
+.glass-modal .modal-body ul {
+    margin: 0.5rem 0 1rem 1.25rem;
+    padding: 0;
+}
+
+.glass-modal .modal-body ul li {
+    margin-bottom: 0.5rem;
+}
+
+.glass-modal .modal-body pre,
+.glass-modal .modal-body code {
+    display: inline-block;
+    background: rgba(0,0,0,0.22);
+    color: var(--text-secondary);
+    padding: 0.35rem 0.6rem;
+    border-radius: 8px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+}
+
+/* Enlaces dentro del modal */
+.glass-modal .modal-body a {
+    color: var(--primary-blue);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.glass-modal .modal-body a:hover {
+    text-decoration: underline;
+}
+
+/* Footer: separación y botones con look consistente */
+.glass-modal .modal-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid rgba(148,163,184,0.04);
+    background: transparent;
+}
+
+/* Botón secundario dentro del modal (Cerrar) adaptado al tema */
+.glass-modal .modal-footer .btn-secondary {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(148,163,184,0.06);
+    color: var(--text-secondary);
+    font-weight: 700;
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+}
+
+.glass-modal .modal-footer .btn-secondary:hover,
+.glass-modal .modal-footer .btn-secondary:focus {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-primary);
+    border-color: rgba(148,163,184,0.12);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+}
+
+/* Ajustes responsive: bordes y padding en móviles */
+@media (max-width: 576px) {
+    .modal-dialog.modal-lg {
+        margin: 0.5rem;
+    }
+
+    .glass-modal {
+        border-radius: 8px;
+    }
+
+    .glass-modal .modal-body {
+        padding: 0.75rem;
+        max-height: calc(74vh);
+    }
+
+    .glass-modal .modal-header,
+    .glass-modal .modal-footer {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+}
+

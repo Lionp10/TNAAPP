@@ -13,20 +13,34 @@
                 <p class="hero-sub">Visualiza el rendimiento de los miembros: partidas, kills, daño y puntos de ranking.</p>
             </div>
 
-            <div class="col-12 col-md-auto mt-3 mt-md-0">
-                <form id="filterForm" asp-action="Index" method="get" class="d-inline">
-                    <div class="input-group">
-                        <select name="range" class="form-select" id="ddlPeriod">
-                            @foreach (var item in Model.Ranges)
-                            {
-                                <option value="@item.Value" selected="@(item.Value == Model.SelectedRange ? "selected" : null)">@item.Text</option>
-                            }
-                        </select>
+            <div class="col-12 col-md-auto mt-3 mt-md-0 d-flex flex-column align-items-end">
+                <form id="filterForm" asp-action="Index" method="get" class="d-inline w-100">
+                    <div class="d-flex align-items-center">
+                        <div class="input-group">
+                            <select name="range" class="form-select" id="ddlPeriod">
+                                @foreach (var item in Model.Ranges)
+                                {
+                                    <option value="@item.Value" selected="@(item.Value == Model.SelectedRange ? "selected" : null)">@item.Text</option>
+                                }
+                            </select>
+                        </div>
+
+                        @* Botón con icono al lado del dropdown (separado con margen, outline-light pero con borde visible) *@
+                        <button type="button"
+                                class="btn btn-outline-light btn-sm btn-scoring-info ms-2"
+                                id="btnScoringInfo"
+                                data-bs-toggle="modal"
+                                data-bs-target="#scoringModal"
+                                aria-label="Cómo se puntúa">
+                            <i class="bi bi-info-lg" aria-hidden="true"></i>
+                        </button>
+
                         <noscript>
-                            <button type="submit" class="btn btn-outline-secondary">Filtrar</button>
+                            <button type="submit" class="btn btn-outline-secondary ms-2">Filtrar</button>
                         </noscript>
                     </div>
                 </form>
+
                 <div class="small text-muted-tna mt-2 text-md-end">
                     Rango seleccionado: <strong>@Model.RangeDisplay</strong>
                 </div>
@@ -295,6 +309,69 @@
     }
 </div>
 
+@* Modal explicativo del sistema de puntuación (usa estilos del sistema: glass-modal) *@
+<div class="modal fade" id="scoringModal" tabindex="-1" aria-labelledby="scoringModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content glass-modal">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scoringModalLabel">Cómo funciona el sistema de puntuación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>Resumen del cálculo que se realiza para obtener la puntuación de cada jugador:</p>
+                <ul>
+                    <li>Cada estadística por partido se convierte en una media por jugador y se normaliza frente al máximo observado entre jugadores (resultado entre 0 y 1).</li>
+                    <li>Pesos aplicados a cada estadística:</li>
+                    <ul>
+                        <li>Derribos: <strong>0.08</strong></li>
+                        <li>Asistencias: <strong>0.08</strong></li>
+                        <li>Kills: <strong>0.30</strong></li>
+                        <li>Headshots: <strong>0.06</strong></li>
+                        <li>Daño: <strong>0.20</strong></li>
+                        <li>Revives: <strong>0.05</strong></li>
+                        <li>Tiempo de juego: <strong>0.10</strong></li>
+                        <li>Posición (WinPlace, menor es mejor): <strong>0.13</strong></li>
+                    </ul>
+                    <li>Penalización por team-kills: hasta <strong>0.25 × normalizado(teamKills)</strong> (se resta).</li>
+                    <li>BaseScore = sum(pesos × normalizaciones) - penalty, recortado entre 0 y 1.</li>
+                    <li>Factor de confiabilidad: <strong>reliability = min(1, ln(Matches+1) / ln(11))</strong>. Esto reduce la puntuación cuando hay pocas partidas (10 partidas → 1.0).</li>
+                    <li>Puntuación final = BaseScore × reliability. Se escala a 0–10 y se redondea a 2 decimales.</li>
+                </ul>
+
+                <h6>Ejemplo 1 (claro):</h6>
+                <p>Supongamos que los máximos observados en el grupo son:
+                    <em>maxKills=5, maxDamage=2000, maxNockdowns=1, maxAssists=1, maxHeadshots=1, maxRevives=0.5, maxTime=2000, maxTeamKills=1, minWin=1, maxWin=8</em>.</p>
+                <p>Jugador "Alpha" (promedios por partido): Nockdowns=0.8, Asist=0.5, Kills=3.2, Headshots=0.8, Damage=1500, Revives=0.1, Time=1800, WinPlace=4.0, TeamKills=0. Matches=8.</p>
+                <ol>
+                    <li>Normalizaciones:
+                        <pre>normKills=3.2/5=0.64, normDamage=1500/2000=0.75, normNockdowns=0.8, ... normWin=(8-4)/(8-1)=0.571</pre>
+                    </li>
+                    <li>Score positivo = Σ(peso × normalizado) ≈ 0.6682</li>
+                    <li>Penalty team-kill = 0.25 × 0 = 0 → baseScore = 0.6682</li>
+                    <li>Reliability = ln(8+1)/ln(11) ≈ 0.916 → finalNormalized ≈ 0.6682 × 0.916 ≈ 0.612</li>
+                    <li>Puntos finales = 0.612 × 10 = <strong>6.12</strong></li>
+                </ol>
+
+                <h6>Ejemplo 2 (team-kills y más partidos):</h6>
+                <p>Jugador "Bravo": positiveScore hipotético = 0.80, AvgTeamKills = 0.5, Matches=12.</p>
+                <ol>
+                    <li>Penalty = 0.25 × 0.5 = 0.125 → baseScore = 0.80 - 0.125 = 0.675</li>
+                    <li>Reliability (12 partidas) = 1.0 → finalNormalized = 0.675</li>
+                    <li>Puntos finales = 6.75</li>
+                </ol>
+
+                <p>Notas:</p>
+                <ul>
+                    <li>El ranking diario, semanal, mensual e histórico usa el mismo algoritmo; solo cambia el conjunto de partidos considerado (por rango de fechas).</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         (function ($) {
@@ -317,6 +394,10 @@
                 if ($formUpdate.length && $btn.length) {
                     // (la lógica que ya tenías para update statistics)
                 }
+
+                // Fallback: si Bootstrap está cargado, el atributo data-bs-... abrirá el modal automáticamente.
+                // Si quieres abrirlo por JS en algún otro sitio, puedes usar:
+                // var m = new bootstrap.Modal(document.getElementById('scoringModal')); m.show();
             });
         })(jQuery);
     </script>
