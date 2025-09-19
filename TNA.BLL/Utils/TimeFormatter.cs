@@ -4,10 +4,6 @@ namespace TNA.BLL.Utils
 {
     public static class TimeFormatter
     {
-        /// <summary>
-        /// Convierte segundos (puede ser decimal) a formato "HH:mm:ss".
-        /// Usa horas totales (no reinicia a 00 cada 24h).
-        /// </summary>
         public static string FormatSecondsToHms(decimal seconds)
         {
             if (seconds <= 0m)

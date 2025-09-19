@@ -23,7 +23,6 @@ namespace TNA.BLL.Services.Implementations
         private readonly PubgOptions _options;
         private readonly ILogger<PubgService> _logger;
 
-        // Rate limit: 10 req/min => 1 request every 6 seconds
         private readonly TimeSpan _playersRateInterval = TimeSpan.FromSeconds(6);
         private readonly SemaphoreSlim _playersRateSemaphore = new(1, 1);
         private DateTime _lastPlayersRequest = DateTime.MinValue;
@@ -139,7 +138,6 @@ namespace TNA.BLL.Services.Implementations
                 return;
             }
 
-            // Quick lookup of playerIds
             var memberPlayerIds = members.Select(m => m.PlayerId).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             _logger.LogInformation("UpdateStatisticsAsync: found {Count} active members. Processing matches...", members.Count);
@@ -159,7 +157,6 @@ namespace TNA.BLL.Services.Implementations
 
                 try
                 {
-                    // Rate-limited request to /players/{playerId}
                     var encodedPlayerId = WebUtility.UrlEncode(member.PlayerId);
                     var playerUrl = $"{_options.BaseUrl}/players/{encodedPlayerId}";
                     _logger.LogDebug("Requesting player {PlayerId} at {Url}", member.PlayerId, playerUrl);
@@ -187,7 +184,6 @@ namespace TNA.BLL.Services.Implementations
                         continue;
                     }
 
-                    // Iterate all matches for the player
                     foreach (var matchEl in matchesArray.EnumerateArray())
                     {
                         cancellationToken.ThrowIfCancellationRequested();
@@ -199,7 +195,6 @@ namespace TNA.BLL.Services.Implementations
                         if (string.IsNullOrWhiteSpace(matchId))
                             continue;
 
-                        // If match already exists, skip
                         var exists = await _matchRepository.ExistsAsync(matchId, cancellationToken);
                         if (exists)
                         {
@@ -207,7 +202,6 @@ namespace TNA.BLL.Services.Implementations
                             continue;
                         }
 
-                        // Fetch match details (endpoint /matches/{matchId}) -- does not require API key
                         var matchUrl = $"{_options.BaseUrl}/matches/{matchId}";
                         _logger.LogInformation("Fetching match {MatchId} details from {Url}", matchId, matchUrl);
 
@@ -223,7 +217,6 @@ namespace TNA.BLL.Services.Implementations
                         using var matchStream = await matchResponse.Content.ReadAsStreamAsync(cancellationToken);
                         using var matchDoc = await JsonDocument.ParseAsync(matchStream, cancellationToken: cancellationToken);
 
-                        // Parse match attributes
                         if (!(matchDoc.RootElement.TryGetProperty("data", out var matchData) &&
                               matchData.TryGetProperty("attributes", out var matchAttributes)))
                         {
@@ -231,7 +224,6 @@ namespace TNA.BLL.Services.Implementations
                             continue;
                         }
 
-                        // check matchType and skip undesired match types (arcade, custom)
                         var matchType = matchAttributes.TryGetProperty("matchType", out var matchTypeEl) && matchTypeEl.ValueKind == JsonValueKind.String
                             ? matchTypeEl.GetString() ?? string.Empty
                             : string.Empty;
@@ -252,7 +244,6 @@ namespace TNA.BLL.Services.Implementations
                             ? createdEl.GetString() ?? string.Empty
                             : string.Empty;
 
-                        // Persist Match entity
                         var matchEntity = new Match
                         {
                             MatchId = matchId,
@@ -268,17 +259,15 @@ namespace TNA.BLL.Services.Implementations
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, "Failed to insert Match {MatchId} into DB.", matchId);
-                            continue; // skip processing participants if save failed
+                            continue; 
                         }
 
-                        // Parse participants from 'included' array (commonly how PUBG returns participants)
                         if (matchDoc.RootElement.TryGetProperty("included", out var included) && included.ValueKind == JsonValueKind.Array)
                         {
                             foreach (var inc in included.EnumerateArray())
                             {
                                 cancellationToken.ThrowIfCancellationRequested();
 
-                                // Some items in included are 'participant' type
                                 if (!inc.TryGetProperty("type", out var typeEl) || typeEl.GetString() != "participant")
                                     continue;
 
@@ -288,7 +277,6 @@ namespace TNA.BLL.Services.Implementations
                                 if (!partAttributes.TryGetProperty("stats", out var statsEl) || statsEl.ValueKind != JsonValueKind.Object)
                                     continue;
 
-                                // playerId inside stats
                                 if (!statsEl.TryGetProperty("playerId", out var pIdEl) || pIdEl.ValueKind != JsonValueKind.String)
                                     continue;
 
@@ -296,11 +284,9 @@ namespace TNA.BLL.Services.Implementations
                                 if (string.IsNullOrWhiteSpace(participantPlayerId))
                                     continue;
 
-                                // Check if this participant is in our clan members
                                 if (!memberPlayerIds.Contains(participantPlayerId))
                                     continue;
 
-                                // Extract required stats safely
                                 int dbnos = statsEl.TryGetProperty("DBNOs", out var dbnosEl) && dbnosEl.TryGetInt32(out var vdb) ? vdb : 0;
                                 int assists = statsEl.TryGetProperty("assists", out var assistsEl) && assistsEl.TryGetInt32(out var vas) ? vas : 0;
                                 decimal damageDealt = statsEl.TryGetProperty("damageDealt", out var dmgEl) && dmgEl.TryGetDecimal(out var vdmg) ? vdmg : 0m;
@@ -342,10 +328,9 @@ namespace TNA.BLL.Services.Implementations
                         {
                             _logger.LogDebug("Match {MatchId} had no included participants.", matchId);
                         }
-
-                        // Small delay after inserting a match to avoid DB spikes (optional)
+                        
                         await Task.Delay(50, cancellationToken);
-                    } // foreach match
+                    } 
                 }
                 catch (OperationCanceledException)
                 {
@@ -355,14 +340,12 @@ namespace TNA.BLL.Services.Implementations
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Unexpected error processing player {PlayerId}.", member.PlayerId);
-                    // continue with next member
                 }
-            } // foreach member
+            }
 
             _logger.LogInformation("UpdateStatisticsAsync completed.");
         }
 
-        // New: obtiene lifetime stats (raw JSON) para un jugador usando la ApiKey en servidor
         public async Task<string?> GetPlayerLifetimeStatsAsync(string playerId, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(playerId))
@@ -403,7 +386,6 @@ namespace TNA.BLL.Services.Implementations
             }
         }
 
-        // Ensure at least _playersRateInterval between consecutive /players requests.
         private async Task<HttpResponseMessage> SendPlayersRequestWithRateLimitAsync(HttpClient client, string url, CancellationToken cancellationToken)
         {
             await _playersRateSemaphore.WaitAsync(cancellationToken);

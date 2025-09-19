@@ -25,9 +25,8 @@
                             </select>
                         </div>
 
-                        @* Botón con icono al lado del dropdown (separado con margen, outline-light pero con borde visible) *@
                         <button type="button"
-                                class="btn btn-outline-light btn-sm btn-scoring-info ms-2"
+                                class="btn btn-light btn-scoring-info ms-2"
                                 id="btnScoringInfo"
                                 data-bs-toggle="modal"
                                 data-bs-target="#scoringModal"
@@ -54,7 +53,6 @@
     }
     else
     {
-        // Variables C# dentro del bloque else (sin usar @{})
         var top = Model.Rankings.Take(3).ToList();
         var first = top.Count > 0 ? top.ElementAtOrDefault(0) : null;
         var second = top.Count > 1 ? top.ElementAtOrDefault(1) : null;
@@ -64,7 +62,6 @@
 
         <div class="podium-wrap mb-4">
             <div class="podium">
-                @* Segundo - izquierda *@
                 <div class="podium-item podium-2">
                     @if (second != null)
                     {
@@ -127,7 +124,6 @@
                     }
                 </div>
 
-                @* Primero - centro (más grande y destacado) *@
                 <div class="podium-item podium-1">
                     @if (first != null)
                     {
@@ -190,7 +186,6 @@
                     }
                 </div>
 
-                @* Tercero - derecha *@
                 <div class="podium-item podium-3">
                     @if (third != null)
                     {
@@ -255,7 +250,6 @@
             </div>
         </div>
 
-        @* Tabla mejorada con responsive y header fijo *@
         @if (Model.Rankings.Count > start)
         {
             <div class="table-container">
@@ -309,7 +303,6 @@
     }
 </div>
 
-@* Modal explicativo del sistema de puntuación (usa estilos del sistema: glass-modal) *@
 <div class="modal fade" id="scoringModal" tabindex="-1" aria-labelledby="scoringModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content glass-modal">
@@ -385,28 +378,69 @@
     <script>
         (function ($) {
             $(function () {
-                // Enviar el formulario añadiendo fragmento para que el navegador vuelva al ancla
                 $('#ddlPeriod').on('change', function (e) {
                     var $form = $('#filterForm');
-                    // limpiar hash si ya existe
                     var action = ($form.attr('action') || window.location.pathname).split('#')[0];
-                    // anexar fragmento que coincide con el id del contenedor
                     $form.attr('action', action + '#rankings');
                     $form.submit();
                 });
 
-                // ... tu código existente de actualización manual (si ya lo tienes)
+
                 var $formUpdate = $('#formUpdateStats');
                 var $btn = $('#btnUpdateStats');
                 var $overlay = $('#loadingOverlay');
 
                 if ($formUpdate.length && $btn.length) {
-                    // (la lógica que ya tenías para update statistics)
-                }
+                    $btn.on('click', function (e) {
+                        e.preventDefault();
 
-                // Fallback: si Bootstrap está cargado, el atributo data-bs-... abrirá el modal automáticamente.
-                // Si quieres abrirlo por JS en algún otro sitio, puedes usar:
-                // var m = new bootstrap.Modal(document.getElementById('scoringModal')); m.show();
+                        var token = $formUpdate.find('input[name="__RequestVerificationToken"]').val()
+                            || $('input[name="__RequestVerificationToken"]').first().val();
+
+                        $btn.prop('disabled', true);
+                        if ($overlay && $overlay.length) {
+                            $overlay.show();
+                        } else {
+                            $overlay = $('<div id="loadingOverlay" class="loading-overlay"></div>').appendTo('body');
+                            $overlay.css({
+                                position: 'fixed',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: 'rgba(0,0,0,0.45)',
+                                display: 'flex',
+                                'align-items': 'center',
+                                'justify-content': 'center',
+                                'z-index': 2000
+                            }).html('<div class="spinner-border text-light" role="status"><span class="visually-hidden">Cargando...</span></div>');
+                        }
+
+                        $.ajax({
+                            url: $formUpdate.attr('action') || '/Home/UpdateStatistics',
+                            type: 'POST',
+                            data: $formUpdate.serialize(), 
+                            headers: token ? { 'RequestVerificationToken': token } : {},
+                            success: function () {
+                                location.reload();
+                            },
+                            statusCode: {
+                                499: function () {
+                                    alert('Actualización cancelada por el servidor.');
+                                }
+                            },
+                            error: function (xhr, status, err) {
+                                console.error('UpdateStatistics error:', status, err);
+                                alert('Error actualizando estadísticas. Revisa logs o inténtalo más tarde.');
+                            },
+                            complete: function () {
+                                $btn.prop('disabled', false);
+                                if ($overlay && $overlay.length) $overlay.hide();
+                            },
+                            timeout: 120000 
+                        });
+                    });
+                }
             });
         })(jQuery);
     </script>

@@ -1,0 +1,191 @@
+﻿@model TNA.APP.Models.ClanMemberViewModel
+
+@{
+    ViewData["Title"] = "Crear miembro";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<section class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">Crear miembro</h2>
+            <small class="text-light">Nuevo miembro del clan</small>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-light">Volver</a>
+        </div>
+    </div>
+
+    <div class="card glass-modal p-3">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label asp-for="Nickname" class="form-label">Nickname</label>
+                    <input asp-for="Nickname" class="form-control" />
+                    <span asp-validation-for="Nickname" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="PlayerId" class="form-label">PlayerId</label>
+                    <input asp-for="PlayerId" class="form-control" />
+                    <span asp-validation-for="PlayerId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="ClanId" class="form-label">ClanId</label>
+                    <input asp-for="ClanId" class="form-control" value="clan.eb61293ee8c94a53be40c0d23d6e118d" readonly />
+                    <span asp-validation-for="ClanId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="FirstName" class="form-label">Nombre</label>
+                    <input asp-for="FirstName" class="form-control" />
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="LastName" class="form-label">Apellido</label>
+                    <input asp-for="LastName" class="form-control" />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Imagen de perfil (opcional, sólo .webp)</label>
+                    <input type="file" name="ProfileImageFile" class="form-control" accept="image/webp" />
+                    <div class="form-text text-light">Sólo se acepta formato <strong>.webp</strong>. Si subes otra extensión se rechazará.</div>
+                    <span class="text-danger">
+                        @(
+                            (ViewData.ModelState.ContainsKey("ProfileImageFile") && ViewData.ModelState["ProfileImageFile"].Errors.Count > 0)
+                            ? ViewData.ModelState["ProfileImageFile"].Errors[0].ErrorMessage
+                            : null
+                        )
+                    </span>
+                </div>
+
+                <div class="col-12">
+                    <div class="form-check">
+                        <input asp-for="Enabled" class="form-check-input" />
+                        <label asp-for="Enabled" class="form-check-label">Habilitado</label>
+                    </div>
+                </div>
+            </div>
+
+            <hr />
+
+            <h5>Redes sociales (máx. 5)</h5>
+
+            <div id="socialsContainer">
+                @if (ViewBag.MemberSocialMedias is IEnumerable<TNA.APP.Models.ClanMemberSMViewModel> existing)
+                {
+                    var i = 0;
+                    foreach (var s in existing)
+                    {
+                        <div class="row g-2 align-items-end social-row mb-2" data-index="@i">
+                            <input type="hidden" name="memberSocialMedias[@i].Id" value="@s.Id" />
+                            <input type="hidden" name="memberSocialMedias[@i].MemberId" value="@s.MemberId" />
+                            <div class="col-md-3">
+                                <label class="form-label">Red</label>
+                                <select name="memberSocialMedias[@i].SocialMediaId" class="form-select">
+                                    <option value="">--</option>
+                                    <option value="DC" selected="@(string.Equals(s.SocialMediaId,"DC",StringComparison.OrdinalIgnoreCase) ? "selected" : null)">DC</option>
+                                    <option value="ST" selected="@(string.Equals(s.SocialMediaId,"ST",StringComparison.OrdinalIgnoreCase) ? "selected" : null)">ST</option>
+                                    <option value="TW" selected="@(string.Equals(s.SocialMediaId,"TW",StringComparison.OrdinalIgnoreCase) ? "selected" : null)">TW</option>
+                                    <option value="YT" selected="@(string.Equals(s.SocialMediaId,"YT",StringComparison.OrdinalIgnoreCase) ? "selected" : null)">YT</option>
+                                    <option value="IG" selected="@(string.Equals(s.SocialMediaId,"IG",StringComparison.OrdinalIgnoreCase) ? "selected" : null)">IG</option>
+                                    <option value="FB" selected="@(string.Equals(s.SocialMediaId,"FB",StringComparison.OrdinalIgnoreCase) ? "selected" : null)">FB</option>
+                                    <option value="X" selected="@(string.Equals(s.SocialMediaId,"X",StringComparison.OrdinalIgnoreCase) ? "selected" : null)">X</option>
+                                </select>
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label">URL</label>
+                                <input name="memberSocialMedias[@i].SocialMediaUrl" class="form-control" value="@s.SocialMediaUrl" />
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-outline-danger w-100 btn-remove-social">Quitar</button>
+                            </div>
+                        </div>
+                        i++;
+                    }
+                }
+            </div>
+
+            <div class="mt-2">
+                <button type="button" id="btnAddSocial" class="btn btn-outline-primary btn-sm">Agregar red</button>
+            </div>
+
+            <div class="mt-4 d-flex justify-content-end">
+                <a asp-action="Index" class="btn btn-outline-light me-2">Cancelar</a>
+                <button type="submit" class="btn btn-accent">Crear miembro</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        (function(){
+            const max = 5;
+            const container = document.getElementById('socialsContainer');
+            const btnAdd = document.getElementById('btnAddSocial');
+
+            function countRows() { return container.querySelectorAll('.social-row').length; }
+
+            function makeRow(index, id = 0, memberId = 0, socialId = '', url = '') {
+                const div = document.createElement('div');
+                div.className = 'row g-2 align-items-end social-row mb-2';
+                div.setAttribute('data-index', index);
+                div.innerHTML = `
+                    <input type="hidden" name="memberSocialMedias[${index}].Id" value="${id}" />
+                    <input type="hidden" name="memberSocialMedias[${index}].MemberId" value="${memberId}" />
+                    <div class="col-md-3">
+                        <label class="form-label">Red</label>
+                        <select name="memberSocialMedias[${index}].SocialMediaId" class="form-select">
+                            <option value="">--</option>
+                            <option value="DC" ${socialId==='DC'?'selected':''}>DC</option>
+                            <option value="ST" ${socialId==='ST'?'selected':''}>ST</option>
+                            <option value="TW" ${socialId==='TW'?'selected':''}>TW</option>
+                            <option value="YT" ${socialId==='YT'?'selected':''}>YT</option>
+                            <option value="IG" ${socialId==='IG'?'selected':''}>IG</option>
+                            <option value="FB" ${socialId==='FB'?'selected':''}>FB</option>
+                            <option value="X" ${socialId==='X'?'selected':''}>X</option>
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label">URL</label>
+                        <input name="memberSocialMedias[${index}].SocialMediaUrl" class="form-control" value="${url}" />
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger w-100 btn-remove-social">Quitar</button>
+                    </div>`;
+                return div;
+            }
+
+            function reindex() {
+                const rows = container.querySelectorAll('.social-row');
+                rows.forEach((r, i) => {
+                    r.setAttribute('data-index', i);
+                    r.querySelectorAll('input, select').forEach(inp => {
+                        const name = inp.getAttribute('name');
+                        if (!name) return;
+                        const newName = name.replace(/memberSocialMedias\[\d+\]/, `memberSocialMedias[${i}]`);
+                        inp.setAttribute('name', newName);
+                    });
+                });
+            }
+
+            btnAdd.addEventListener('click', function(){
+                if (countRows() >= max) return;
+                const newRow = makeRow(countRows());
+                container.appendChild(newRow);
+            });
+
+            container.addEventListener('click', function(e){
+                if (e.target && e.target.classList.contains('btn-remove-social')) {
+                    e.preventDefault();
+                    e.target.closest('.social-row').remove();
+                    reindex();
+                }
+            });
+        })();
+    </script>
+}

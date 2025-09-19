@@ -5,7 +5,6 @@ namespace TNA.APP.Models
 {
     public class ProfileViewModel
     {
-        // Usuario
         public int Id { get; set; }
 
         [Required(ErrorMessage = "El nickname es obligatorio")]
@@ -28,13 +27,10 @@ namespace TNA.APP.Models
         [Display(Name = "Confirmar nueva contraseña")]
         public string? ConfirmPassword { get; set; }
 
-        // Si el usuario está relacionado con un ClanMember
         public int? MemberId { get; set; }
 
-        // ViewModel del miembro (si aplica). No usar DTOs aquí evita validación implícita no deseada.
         public ClanMemberViewModel? Member { get; set; }
 
-        // Redes sociales del miembro (máx 5)
         public List<ClanMemberSMViewModel>? MemberSocialMedias { get; set; } = new();
     }
 }

@@ -1,0 +1,293 @@
+﻿@model TNA.APP.Models.ClanMemberIndexViewModel
+
+@{
+    ViewData["Title"] = "Miembros del clan";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+
+    var successMsg = TempData["SuccessMessage"] as string;
+    var errorMsg = TempData["ErrorMessage"] as string;
+    var hasTempMsg = !string.IsNullOrEmpty(successMsg) || !string.IsNullOrEmpty(errorMsg);
+    var isSuccess = !string.IsNullOrEmpty(successMsg);
+    var tempMsg = isSuccess ? successMsg : errorMsg;
+}
+
+<style>
+    .table-responsive { -webkit-overflow-scrolling: touch; }
+
+    @@media (max-width: 768px) { 
+        .table-responsive .table thead { display: none; }
+        .table-responsive .table,
+        .table-responsive .table tbody,
+        .table-responsive .table tr { display: block; width: 100%; }
+        .table-responsive .table tr {
+            margin-bottom: 0.75rem;
+            background: rgba(15,23,42,0.6);
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+        .table-responsive .table td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0.65rem;
+            border: none;
+            width: 100%;
+            color: var(--text-secondary, #e2e8f0);
+            background: transparent;
+        }
+        .table-responsive .table td::before {
+            content: attr(data-label);
+            font-weight: 700;
+            color: var(--text-muted, #94a3b8);
+            margin-right: 0.75rem;
+            min-width: 95px;
+            display: inline-block;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.4px;
+        }
+        .table-responsive .table td.text-end,
+        .table-responsive .table td:last-child { justify-content: flex-end; }
+        .table-responsive .table td .badge { font-size: 0.75rem; padding: 0.35rem 0.5rem; }
+        .table-responsive .table td .btn { padding: 0.28rem 0.45rem; font-size: 0.85rem; }
+    }
+
+    .temp-msg-modal .modal-dialog { max-width: 520px; }
+    .temp-msg-modal .modal-header { border-bottom: none; padding-bottom: .5rem; }
+    .temp-msg-modal .modal-body { color: var(--text-secondary); padding-top: .25rem; padding-bottom: .75rem; }
+    .temp-msg-modal .modal-title { color: var(--text-primary); font-weight: 800; font-size: 1rem; }
+    .temp-msg-modal .modal-footer { border-top: none; padding-top: .25rem; }
+    .temp-msg-icon { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:8px; margin-right:.5rem; }
+    .temp-msg-success { background: rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.18); color: var(--success-green, #10b981); }
+    .temp-msg-error { background: rgba(220,53,69,0.08); border:1px solid rgba(220,53,69,0.14); color: #dc3545; }
+
+    .confirm-delete .modal-dialog { max-width: 560px; }
+    .confirm-delete .modal-body { color: var(--text-secondary); }
+    .confirm-delete .modal-title { font-weight: 800; }
+    .confirm-delete .btn-danger { min-width: 120px; }
+
+    nav.pagination-wrap { margin-top: 1.25rem; }
+
+    .pagination {
+        --accent: #0ea5e9; 
+        display: flex;
+        gap: .375rem;
+        align-items: center;
+    }
+
+    .pagination .page-item .page-link {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.04);
+        color: var(--text-muted, #cbd5e1);
+        padding: .32rem .6rem;
+        min-width: 36px;
+        text-align: center;
+        border-radius: .5rem;
+        transition: all .12s ease-in-out;
+        box-shadow: none;
+    }
+
+    .pagination .page-link:hover {
+        background: rgba(255,255,255,0.05);
+        color: var(--text-primary, #fff);
+        transform: translateY(-1px);
+    }
+
+    .pagination .page-item.active .page-link {
+        background: var(--accent);
+        border-color: rgba(2,6,23,0.25);
+        color: #ffffff;
+        font-weight: 700;
+        box-shadow: 0 6px 16px rgba(14,165,233,0.12);
+    }
+
+    .pagination .page-item.disabled .page-link {
+        opacity: 0.6;
+        filter: grayscale(0.2);
+        cursor: not-allowed;
+    }
+
+    .pagination.pagination-sm .page-link { padding: .28rem .5rem; min-width: 34px; font-size: .9rem; }
+
+    .pagination-container { margin-top: 1rem; display:flex; justify-content:flex-end; }
+</style>
+
+<section class="container mt-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h2 class="mb-0">Miembros del clan</h2>
+            <small class="text-light">Listado y administración de miembros</small>
+        </div>
+        <div>
+            <a asp-action="Create" class="btn btn-accent">
+                <i class="bi bi-person-plus"></i> Crear miembro
+            </a>
+        </div>
+    </div>
+
+    @if (hasTempMsg)
+    {
+        <div class="modal fade temp-msg-modal" id="tempMessageModal" tabindex="-1" aria-hidden="true" aria-labelledby="tempMessageModalLabel">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content glass-modal">
+                    <div class="modal-header">
+                        <div class="d-flex align-items-center">
+                            <div class="temp-msg-icon @(isSuccess ? "temp-msg-success" : "temp-msg-error")">
+                                @if (isSuccess) { <i class="bi bi-check-lg"></i> } else { <i class="bi bi-exclamation-triangle-fill"></i> }
+                            </div>
+                            <h5 class="modal-title" id="tempMessageModalLabel">@(isSuccess ? "Operación correcta" : "Error")</h5>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body"><p class="mb-0">@tempMsg</p></div>
+                    <div class="modal-footer"><button type="button" class="btn btn-accent" data-bs-dismiss="modal">Cerrar</button></div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="modal fade confirm-delete" id="confirmHardDeleteModal" tabindex="-1" aria-hidden="true" aria-labelledby="confirmHardDeleteLabel">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmHardDeleteLabel">Eliminar miembro</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmHardDeleteMessage">Esta acción eliminará el miembro permanentemente. ¿Desea continuar?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnConfirmHardDelete" class="btn btn-danger">Eliminar permanentemente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover align-middle">
+            <thead>
+                <tr>
+                    <th style="width:48px;">#</th>
+                    <th>Nickname</th>
+                    <th>Nombre</th>
+                    <th style="width:280px;">PlayerId</th>
+                    <th style="width:260px;">ClanId</th>
+                    <th style="width:80px;">Redes</th>
+                    <th style="width:90px;">Habilitado</th>
+                    <th style="width:220px;" class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model?.Items == null || !Model.Items.Any())
+                {
+                    <tr><td colspan="8" class="text-center text-muted py-4">No hay miembros para mostrar.</td></tr>
+                }
+                else
+                {
+                    var startIndex = (Model.Page - 1) * Model.PageSize + 1;
+                    var idx = startIndex;
+                    foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td class="fw-bold">@idx</td>
+                            <td>@item.Member.Nickname</td>
+                            <td>@($"{item.Member.FirstName} {item.Member.LastName}")</td>
+                            <td class="text-truncate" style="max-width:280px;">@item.Member.PlayerId</td>
+                            <td class="text-truncate" style="max-width:260px;">@item.Member.ClanId</td>
+                            <td><span class="badge bg-secondary">@((item.SocialMedias?.Count() ?? 0))</span></td>
+                            <td>
+                                @if (item.Member.Enabled) { <span class="badge bg-success">Sí</span> } else { <span class="badge bg-secondary">No</span> }
+                            </td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@item.Member.Id" class="btn btn-sm btn-light me-1"><i class="bi bi-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@item.Member.Id" class="btn btn-sm btn-primary text-white me-1"><i class="bi bi-pencil"></i></a>
+                                <a asp-action="Delete" asp-route-id="@item.Member.Id" class="btn btn-sm btn-warning text-white me-1"><i class="bi bi-person-x"></i></a>
+                                <form asp-action="HardDelete" method="post" class="d-inline-block hard-delete-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@item.Member.Id" />
+                                    <button type="button" class="btn btn-sm btn-danger btn-hard-delete" data-member="@item.Member.Nickname"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        idx++;
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model != null && Model.TotalPages > 1)
+    {
+        <nav aria-label="Paginación miembros" class="pagination-wrap">
+            <div class="pagination-container">
+                <ul class="pagination pagination-sm">
+                    <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(Model.Page - 1)">Anterior</a>
+                    </li>
+
+                    @for (var p = 1; p <= Model.TotalPages; p++)
+                    {
+                        var active = p == Model.Page ? "active" : "";
+                        <li class="page-item @active">
+                            <a class="page-link" asp-action="Index" asp-route-page="@p">@p</a>
+                        </li>
+                    }
+
+                    <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(Model.Page + 1)">Siguiente</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    }
+</section>
+
+@section Scripts {
+    <script>
+        (function () {
+            @if (hasTempMsg)
+            {
+                <text>
+                document.addEventListener('DOMContentLoaded', function () {
+                    var el = document.getElementById('tempMessageModal');
+                    if (!el) return;
+                    try {
+                        var m = new bootstrap.Modal(el);
+                        m.show();
+                        setTimeout(function () { try { m.hide(); } catch (e) { } }, 4500);
+                    } catch (e) { }
+                });
+                </text>
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                var currentForm = null;
+                var confirmModalEl = document.getElementById('confirmHardDeleteModal');
+                if (!confirmModalEl) return;
+                var confirmModal = new bootstrap.Modal(confirmModalEl);
+                var btnConfirm = document.getElementById('btnConfirmHardDelete');
+                var messageEl = document.getElementById('confirmHardDeleteMessage');
+
+                document.querySelectorAll('.btn-hard-delete').forEach(function (btn) {
+                    btn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        currentForm = btn.closest('form.hard-delete-form');
+                        var nickname = btn.getAttribute('data-member') || 'este miembro';
+                        if (messageEl) {
+                            messageEl.textContent = 'Esta acción eliminará ' + nickname + ' permanentemente. ¿Desea continuar?';
+                        }
+                        confirmModal.show();
+                    });
+                });
+
+                if (btnConfirm) {
+                    btnConfirm.addEventListener('click', function () {
+                        if (!currentForm) { confirmModal.hide(); return; }
+                        try { currentForm.submit(); } catch (e) { console.error(e); }
+                    });
+                }
+            });
+        })();
+    </script>
+}

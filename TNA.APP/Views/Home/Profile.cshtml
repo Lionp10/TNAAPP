@@ -3,11 +3,19 @@
 @{
     ViewData["Title"] = "Mi perfil";
 
-    // Leer roleid desde claims para decidir qué campos mostrar
     int roleId = 0;
     var roleClaim = User.FindFirst("roleid")?.Value;
     int.TryParse(roleClaim, out roleId);
-    bool showMemberFields = (roleId == 3); // RoleId == 3 ve todos los campos
+    bool showMemberFields = (roleId == 3); 
+
+    string currentImageSrc = Url.Content("~/images/avatar-placeholder.webp");
+    var pi = Model.Member?.ProfileImage ?? string.Empty;
+    if (!string.IsNullOrWhiteSpace(pi))
+    {
+        if (pi.StartsWith("~") || pi.StartsWith("/")) currentImageSrc = Url.Content(pi);
+        else if (pi.StartsWith("http", StringComparison.OrdinalIgnoreCase)) currentImageSrc = pi;
+        else currentImageSrc = Url.Action("Image", "Media", new { key = pi }) ?? Url.Content("~/images/avatar-placeholder.webp");
+    }
 }
 
 <link rel="stylesheet" href="~/css/auth.css" />
@@ -17,13 +25,12 @@
     <section class="auth-container">
         <div class="auth-background"></div>
         <div class="container mt-5">
-            <form asp-action="Profile" method="post" novalidate>
+            <form asp-action="Profile" method="post" enctype="multipart/form-data" novalidate>
                 @Html.AntiForgeryToken()
 
                 <input type="hidden" asp-for="Id" />
                 <input type="hidden" asp-for="MemberId" />
 
-                @* Si se muestran los campos de member dejamos el hidden Member.Id, si no, no lo exponemos *@
                 @if (showMemberFields && Model.Member != null)
                 {
                     <input type="hidden" asp-for="Member.Id" />
@@ -31,7 +38,9 @@
 
                 <div class="auth-card">
                     <div class="auth-card-header d-flex justify-content-between align-items-center">
-                        <h2 class="auth-title mb-0"><i class="bi bi-person-circle me-2"></i> Perfil</h2>
+                        <h2 class="auth-title mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-person-circle me-2"></i> Perfil
+                        </h2>
                     </div>
 
                     <div class="auth-card-body">
@@ -51,7 +60,6 @@
                         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
                         <div class="row gx-4">
-                            <!-- Datos personales -->
                             <div class="col-lg-6">
                                 <h5 class="mb-3">Datos personales</h5>
 
@@ -61,26 +69,8 @@
                                     <span asp-validation-for="Nickname" class="text-danger small"></span>
                                 </div>
 
-                                @* Mostrar campos de member (Nombre/Apellido) solo si el role permite verlo *@
-                                @if (showMemberFields && Model.MemberId != null)
-                                {
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label small text-muted">Nombre</label>
-                                            <input asp-for="Member.FirstName" class="form-control" />
-                                            <span asp-validation-for="Member.FirstName" class="text-danger small"></span>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label small text-muted">Apellido</label>
-                                            <input asp-for="Member.LastName" class="form-control" />
-                                            <span asp-validation-for="Member.LastName" class="text-danger small"></span>
-                                        </div>
-                                    </div>
-                                }
-
                                 <div class="mb-3">
                                     <label asp-for="Email" class="form-label small text-muted"></label>
-                                    @* Email mostrado en solo lectura para evitar modificación en UI; servidor usa el email existente siempre *@
                                     <input asp-for="Email" class="form-control" readonly />
                                     <span asp-validation-for="Email" class="text-danger small"></span>
                                 </div>
@@ -102,12 +92,36 @@
                                 </div>
                             </div>
 
-                            <!-- Datos jugador -->
                             <div class="col-lg-6">
                                 <h5 class="mb-3">Datos jugador</h5>
 
                                 @if (showMemberFields && Model.MemberId != null)
                                 {
+                                    <div class="mb-3 d-flex align-items-center gap-3">
+
+                                        <div style="width:56px;flex:0 0 56px;height:56px;position:relative;overflow:visible;">
+                                            <img id="bodyAvatarPreview" src="@currentImageSrc" alt="Avatar" style="position:absolute;left:50%;top:50%;width:80px;height:80px;transform:translate(-50%,-50%);object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.06);" />
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <label class="form-label small text-muted d-block mb-1">Cambiar imagen de perfil</label>
+                                            <div class="mb-1">
+                                                <small class="form-text text-light">Subir una nueva imagen reemplazará la anterior.</small>
+                                            </div>
+
+                                            <label class="btn btn-danger btn-sm mb-0 w-100 text-truncate" id="btnSelectFileLabel" style="cursor:pointer; padding-top:0.45rem; padding-bottom:0.45rem;">
+                                                <span id="btnSelectFileText">Seleccionar archivo</span>
+                                                <input type="file" name="ProfileImageFile" accept="image/webp" id="inputProfileFile" style="display:none;" />
+                                            </label>
+
+                                            <div id="profileImageError" class="text-danger small mt-1 @(ViewData.ModelState.ContainsKey("ProfileImageFile") && ViewData.ModelState["ProfileImageFile"].Errors.Count>0 ? "" : "d-none")">
+                                                @foreach (var err in (ViewData.ModelState.ContainsKey("ProfileImageFile") ? ViewData.ModelState["ProfileImageFile"].Errors : Enumerable.Empty<Microsoft.AspNetCore.Mvc.ModelBinding.ModelError>()))
+                                                {
+                                                    @err.ErrorMessage
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div class="mb-3">
                                         <label class="form-label small text-muted">Nickname jugador</label>
                                         <input asp-for="Member.Nickname" class="form-control" readonly />
@@ -120,7 +134,6 @@
 
                                     <div class="mt-4">
                                         <label class="form-label small text-muted">Redes sociales (máx. 5)</label>
-
                                         <div id="socialsList" class="mb-2">
                                             @if (Model.MemberSocialMedias != null && Model.MemberSocialMedias.Any())
                                             {
@@ -156,9 +169,6 @@
                                         <div class="align-items-center">
                                             <button type="button" id="btnAddSocial" class="btn btn-sm btn-secondary form-control">Agregar red social</button>
                                         </div>
-                                        <div>
-                                            <small class="form-text text-light ms-2">Permitidas: Steam, Twitch, YouTube, Instagram, Facebook, X, Tiktok, Reddit, Snapchat, WhatsApp</small>
-                                        </div>
                                     </div>
                                 }
                                 else
@@ -190,6 +200,52 @@
         }
 
         (function () {
+            const fileInput = document.getElementById('inputProfileFile');
+            const bodyPreview = document.getElementById('bodyAvatarPreview');
+            const label = document.getElementById('btnSelectFileLabel');
+            const labelText = document.getElementById('btnSelectFileText');
+            const errorEl = document.getElementById('profileImageError');
+
+            function showError(msg) {
+                if (errorEl) {
+                    errorEl.textContent = msg;
+                    errorEl.classList.remove('d-none');
+                } else {
+                    alert(msg);
+                }
+            }
+
+            function clearError() {
+                if (errorEl) {
+                    errorEl.textContent = '';
+                    errorEl.classList.add('d-none');
+                }
+            }
+
+            if (fileInput) {
+                fileInput.addEventListener('change', function (e) {
+                    clearError();
+                    const f = fileInput.files && fileInput.files[0];
+                    if (!f) return;
+                    const name = f.name || '';
+                    const ext = name.split('.').pop()?.toLowerCase() || '';
+                    const ct = f.type || '';
+                    if (ext !== 'webp' && ct !== 'image/webp') {
+                        showError('Solo se permiten imágenes en formato .webp.');
+                        fileInput.value = '';
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = function (ev) {
+                        const src = ev.target.result;
+                        if (bodyPreview) bodyPreview.src = src;
+
+                        if (labelText) labelText.textContent = 'Archivo: ' + (name.length > 18 ? name.slice(0, 15) + '…' : name);
+                    };
+                    reader.readAsDataURL(f);
+                });
+            }
+
             const maxSocials = 5;
             const allowed = { ST: 'Steam', TW: 'Twitch', YT: 'YouTube', IG: 'Instagram', FB: 'Facebook', X: 'X', TK: 'Tiktok', RD: 'Reddit', SP: 'Snapchat', WS: 'WhatsApp' };
 

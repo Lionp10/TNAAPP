@@ -1,0 +1,46 @@
+﻿@model TNA.APP.Models.ClanMemberViewModel
+
+@{
+    ViewData["Title"] = "Eliminar miembro";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+}
+
+<section class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">Eliminar miembro</h2>
+            <small class="text-light">Confirmar deshabilitación del miembro</small>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-light">Volver</a>
+        </div>
+    </div>
+
+    <div class="card glass-modal p-3">
+        <dl class="row">
+            <dt class="col-sm-3">Nickname</dt>
+            <dd class="col-sm-9">@Model.Nickname</dd>
+
+            <dt class="col-sm-3">Nombre</dt>
+            <dd class="col-sm-9">@Model.FirstName @Model.LastName</dd>
+
+            <dt class="col-sm-3">PlayerId</dt>
+            <dd class="col-sm-9 text-truncate" style="max-width:640px;">@Model.PlayerId</dd>
+
+            <dt class="col-sm-3">ClanId</dt>
+            <dd class="col-sm-9 text-truncate" style="max-width:640px;">@Model.ClanId</dd>
+
+            <dt class="col-sm-3">Habilitado</dt>
+            <dd class="col-sm-9">@((Model.Enabled) ? "Sí" : "No")</dd>
+        </dl>
+
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div class="d-flex justify-content-end">
+                <a asp-action="Index" class="btn btn-outline-light me-2">Cancelar</a>
+                <button type="submit" class="btn btn-warning">Deshabilitar</button>
+            </div>
+        </form>
+    </div>
+</section>

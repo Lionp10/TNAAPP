@@ -60,12 +60,10 @@ namespace TNA.BLL.Services.Implementations
         {
             if (dto is null) throw new ArgumentNullException(nameof(dto));
 
-            // Validaciones simples
             if (string.IsNullOrWhiteSpace(dto.Email)) throw new ArgumentException("Email is required.", nameof(dto));
             if (string.IsNullOrWhiteSpace(dto.Nickname)) throw new ArgumentException("Nickname is required.", nameof(dto));
             if (string.IsNullOrWhiteSpace(dto.Password)) throw new ArgumentException("Password is required.", nameof(dto));
 
-            // Comprueba unicidad
             if (await _repository.EmailExistsAsync(dto.Email, cancellationToken).ConfigureAwait(false))
                 throw new InvalidOperationException("El email ya está registrado.");
 
@@ -75,7 +73,6 @@ namespace TNA.BLL.Services.Implementations
             var entity = _mapper.Map<User>(dto);
             entity.CreatedAt ??= DateTime.UtcNow;
 
-            // Hashear la contraseña en claro antes de guardar
             entity.PasswordHash = _passwordHasher.HashPassword(entity, dto.Password);
 
             var id = await _repository.CreateAsync(entity, cancellationToken).ConfigureAwait(false);
@@ -87,10 +84,8 @@ namespace TNA.BLL.Services.Implementations
         {
             if (dto is null) throw new ArgumentNullException(nameof(dto));
 
-            // Map to entity; repository will validate existence
             var entity = _mapper.Map<User>(dto);
 
-            // Si no se proporciona nueva contraseña, conservar la existente:
             if (string.IsNullOrWhiteSpace(dto.Password))
             {
                 var existing = await _repository.GetByIdAsync(dto.Id, cancellationToken).ConfigureAwait(false);
@@ -100,7 +95,6 @@ namespace TNA.BLL.Services.Implementations
             }
             else
             {
-                // Hasheamos la nueva contraseña
                 entity.PasswordHash = _passwordHasher.HashPassword(entity, dto.Password);
             }
 

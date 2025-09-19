@@ -6,6 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using TNA.BLL.DTOs;
 using TNA.BLL.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using TNA.DAL.DbContext;
+using TNA.DAL.Entities;
+using TNA.APP.Models;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace TNA.APP.Controllers
 {
@@ -14,6 +21,7 @@ namespace TNA.APP.Controllers
     {
         private readonly IUserService _userService;
         private readonly ILogger<UserController> _logger;
+        private const int PageSizeConst = 10;
 
         public UserController(IUserService userService, ILogger<UserController> logger)
         {
@@ -21,14 +29,24 @@ namespace TNA.APP.Controllers
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        // GET: /User
-        public async Task<IActionResult> Index(CancellationToken cancellationToken = default)
+        public async Task<IActionResult> Index(int page = 1, CancellationToken cancellationToken = default)
         {
+            if (page < 1) page = 1;
+
             var users = await _userService.GetAllAsync(cancellationToken).ConfigureAwait(false);
-            return View(users);
+            var total = users?.Count() ?? 0;
+
+            var pageSize = PageSizeConst;
+            var items = (users ?? new List<UserDTO>())
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var vm = new PagedListViewModel<UserDTO>(items, page, pageSize, total);
+
+            return View(vm);
         }
 
-        // GET: /User/Details/5
         public async Task<IActionResult> Details(int id, CancellationToken cancellationToken = default)
         {
             var user = await _userService.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
@@ -36,20 +54,22 @@ namespace TNA.APP.Controllers
             return View(user);
         }
 
-        // GET: /User/Create
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create(CancellationToken cancellationToken = default)
         {
+            await PopulateRolesAndMembers(selectedRoleId: 4, selectedMemberId: null, currentUserId: null, cancellationToken);
             return View();
         }
 
-        // POST: /User/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(UserCreateDTO model, CancellationToken cancellationToken = default)
         {
             if (!ModelState.IsValid)
+            {
+                await PopulateRolesAndMembers(model.RoleId, model.MemberId, null, cancellationToken);
                 return View(model);
+            }
 
             try
             {
@@ -61,17 +81,18 @@ namespace TNA.APP.Controllers
             {
                 ModelState.AddModelError(string.Empty, ex.Message);
                 _logger.LogWarning(ex, "Error creating user");
+                await PopulateRolesAndMembers(model.RoleId, model.MemberId, null, cancellationToken);
                 return View(model);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error creating user");
                 ModelState.AddModelError(string.Empty, "Error inesperado al crear el usuario.");
+                await PopulateRolesAndMembers(model.RoleId, model.MemberId, null, cancellationToken);
                 return View(model);
             }
         }
 
-        // GET: /User/Edit/5
         [HttpGet]
         public async Task<IActionResult> Edit(int id, CancellationToken cancellationToken = default)
         {
@@ -86,19 +107,21 @@ namespace TNA.APP.Controllers
                 RoleId = user.RoleId,
                 MemberId = user.MemberId,
                 Enabled = user.Enabled
-                // Password left null (only set when changing)
             };
 
+            await PopulateRolesAndMembers(dto.RoleId, dto.MemberId, dto.Id, cancellationToken);
             return View(dto);
         }
 
-        // POST: /User/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(UserUpdateDTO model, CancellationToken cancellationToken = default)
         {
             if (!ModelState.IsValid)
+            {
+                await PopulateRolesAndMembers(model.RoleId, model.MemberId, model.Id, cancellationToken);
                 return View(model);
+            }
 
             try
             {
@@ -114,17 +137,18 @@ namespace TNA.APP.Controllers
             {
                 ModelState.AddModelError(string.Empty, ex.Message);
                 _logger.LogWarning(ex, "Validation error updating user");
+                await PopulateRolesAndMembers(model.RoleId, model.MemberId, model.Id, cancellationToken);
                 return View(model);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error updating user");
                 ModelState.AddModelError(string.Empty, "Error inesperado al actualizar el usuario.");
+                await PopulateRolesAndMembers(model.RoleId, model.MemberId, model.Id, cancellationToken);
                 return View(model);
             }
         }
 
-        // GET: /User/Delete/5
         [HttpGet]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken = default)
         {
@@ -133,7 +157,6 @@ namespace TNA.APP.Controllers
             return View(user);
         }
 
-        // POST: /User/Delete/5  (soft delete)
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id, CancellationToken cancellationToken = default)
@@ -152,7 +175,6 @@ namespace TNA.APP.Controllers
             }
         }
 
-        // Optional: hard delete endpoint (dangerous; keep protected)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> HardDelete(int id, CancellationToken cancellationToken = default)
@@ -168,6 +190,44 @@ namespace TNA.APP.Controllers
                 _logger.LogError(ex, "Unexpected error hard-deleting user");
                 TempData["ErrorMessage"] = "Error inesperado al eliminar permanentemente el usuario.";
                 return RedirectToAction(nameof(Index));
+            }
+        }
+
+        private async Task PopulateRolesAndMembers(int? selectedRoleId, int? selectedMemberId, int? currentUserId, CancellationToken cancellationToken = default)
+        {
+            var db = HttpContext.RequestServices.GetService(typeof(TNADbContext)) as TNADbContext;
+            if (db != null)
+            {
+                var roles = await db.Roles
+                    .AsNoTracking()
+                    .OrderBy(r => r.Id)
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                ViewBag.Roles = new SelectList(roles, "Id", "Description", selectedRoleId);
+
+                var assignedMemberIdsQuery = db.Users.AsNoTracking().Where(u => u.MemberId.HasValue);
+                if (currentUserId.HasValue)
+                    assignedMemberIdsQuery = assignedMemberIdsQuery.Where(u => u.Id != currentUserId.Value);
+
+                var assignedMemberIds = await assignedMemberIdsQuery
+                    .Select(u => u.MemberId!.Value)
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                var availableMembers = await db.ClanMembers
+                    .AsNoTracking()
+                    .Where(m => m.Enabled && !assignedMemberIds.Contains(m.Id))
+                    .OrderBy(m => m.Nickname)
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                ViewBag.Members = new SelectList(availableMembers, "Id", "Nickname", selectedMemberId);
+            }
+            else
+            {
+                ViewBag.Roles = new SelectList(Array.Empty<Role>(), "Id", "Description", selectedRoleId);
+                ViewBag.Members = new SelectList(Array.Empty<ClanMember>(), "Id", "Nickname", selectedMemberId);
             }
         }
     }

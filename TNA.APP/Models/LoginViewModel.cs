@@ -14,7 +14,6 @@ namespace TNA.APP.Models
 
         public bool RememberMe { get; set; } = false;
 
-        // URL a donde volver tras login
         public string? ReturnUrl { get; set; }
     }
 }

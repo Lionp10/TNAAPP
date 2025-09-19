@@ -33,10 +33,29 @@
             @foreach (var item in Model)
             {
                 var m = item.Member;
+
+                string imgSrc;
+                if (string.IsNullOrWhiteSpace(m.ProfileImage))
+                {
+                    imgSrc = Url.Content("~/images/avatar-placeholder.webp");
+                }
+                else if (m.ProfileImage.StartsWith("~") || m.ProfileImage.StartsWith("/"))
+                {
+                    imgSrc = Url.Content(m.ProfileImage);
+                }
+                else if (m.ProfileImage.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    imgSrc = m.ProfileImage;
+                }
+                else
+                {
+                    imgSrc = Url.Action("Image", "Media", new { key = m.ProfileImage }) ?? Url.Content("~/images/avatar-placeholder.webp");
+                }
+
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                     <article class="glass-card d-flex flex-column align-items-start">
                         <div class="w-100 d-flex align-items-center gap-3">
-                            <img src="@(Url.Content(string.IsNullOrWhiteSpace(m.ProfileImage) ? "~/images/avatar-placeholder.webp" : m.ProfileImage))"
+                            <img src="@imgSrc"
                                  alt="@m.Nickname"
                                  class="rounded-circle member-avatar" />
                             <div class="flex-grow-1">
@@ -87,7 +106,6 @@
     }
 </section>
 
-@* Modal para mostrar lifetime stats *@
 <div class="modal fade" id="lifetimeModal" tabindex="-1" aria-labelledby="lifetimeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content bg-dark text-light">
@@ -111,13 +129,12 @@
                     </div>
 
                     <div id="modesContainer" class="row g-4">
-                        <!-- Secciones por modo dinámicas -->
+                        
                     </div>
                 </div>
 
                 <div id="lifetimeError" class="alert alert-danger d-none" role="alert"></div>
 
-                <!-- Added loading spinner -->
                 <div id="lifetimeSpinner" class="text-center py-5">
                     <div class="spinner-border text-info" role="status">
                         <span class="visually-hidden">Cargando...</span>

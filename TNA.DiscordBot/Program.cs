@@ -67,35 +67,39 @@ class Program
         {
             Console.WriteLine($"✅ {client.CurrentUser} conectado a Discord.");
 
-            // Rango: día anterior completo en zona GMT-3 (para coincidir con la web), convertido a UTC
             var gmtMinus3 = TimeSpan.FromHours(-3);
             var nowInZone = DateTimeOffset.UtcNow.ToOffset(gmtMinus3);
-            var startLocal = nowInZone.Date.AddDays(-1); // día calendario anterior EN GMT-3
-            var endLocal = startLocal.AddDays(1);        // exclusivo
+            var startLocal = nowInZone.Date.AddDays(-1);
+            var endLocal = startLocal.AddDays(1);        
             var startDateUtc = new DateTimeOffset(startLocal, gmtMinus3).ToUniversalTime();
             var endDateUtc = new DateTimeOffset(endLocal, gmtMinus3).ToUniversalTime();
-            var displayDate = startLocal.ToString("dd/MM/yyyy"); // mostrar la fecha del día anterior en zona GMT-3
+            var displayDate = startLocal.ToString("dd/MM/yyyy"); 
 
-            // Esperar para que caché de canales se estabilice
             await Task.Delay(2000);
 
-            // Obtener ranking del día anterior: [startDateUtc, endDateUtc)
             List<TNA.BLL.DTOs.PlayerRankingDTO> ranking = new();
+            int totalMembers = 0;
             try
             {
                 using var scope = host.Services.CreateScope();
                 var playerMatchService = scope.ServiceProvider.GetRequiredService<IPlayerMatchService>();
+                var clanMemberRepo = scope.ServiceProvider.GetRequiredService<IClanMemberRepository>();
 
-                // Llamada real al servicio: el servicio devuelve PlayerRankingDTO.TotalPoints ya calculado
                 ranking = await playerMatchService.GetRankingAsync(startDateUtc, endDateUtc);
-                Console.WriteLine($"[DIAG] Ranking obtenido por service: {ranking?.Count ?? 0} jugadores");
+                var members = await clanMemberRepo.GetActiveMembersAsync();
+                totalMembers = members?.Count ?? 0;
+
+                Console.WriteLine($"[DIAG] Ranking obtenido por service: {ranking?.Count ?? 0} jugadores. Miembros activos totales: {totalMembers}");
             }
             catch (Exception ex)
             {
                 Console.WriteLine("❌ Error obteniendo ranking desde DB: " + ex);
             }
 
-            // Intentar obtener el canal
+            var playedRanking = (ranking ?? new List<TNA.BLL.DTOs.PlayerRankingDTO>())
+                                .Where(r => r.MatchesCount > 0)
+                                .ToList();
+
             IMessageChannel? channel = null;
             try
             {
@@ -131,33 +135,28 @@ class Program
 
             try
             {
-                if (ranking == null || ranking.Count == 0)
+                if (playedRanking == null || playedRanking.Count == 0)
                 {
-                    var info = $"📢 Ranking diario ({displayDate}) — Total: 0 jugadores\nNo se encontraron partidas en el día anterior ({startDateUtc:dd/MM/yyyy}).";
+                    var info = $"📢 Ranking diario ({displayDate}) — 0 de {totalMembers} jugadores totales\nNo se encontraron partidas en el día anterior ({startDateUtc:dd/MM/yyyy}).";
                     await channel.SendMessageAsync(info);
-                    Console.WriteLine("[DIAG] Ranking vacío, enviado aviso.");
+                    Console.WriteLine("[DIAG] Ranking vacío (nadie jugó), enviado aviso.");
                 }
                 else
                 {
-                    // Enviar título (fecha del día anterior)
-                    var header = $"📢 Ranking diario ({displayDate}) — Total: {ranking.Count} jugadores";
+                    var header = $"📢 Ranking diario ({displayDate}) — {playedRanking.Count} de {totalMembers} jugadores totales";
                     await channel.SendMessageAsync(header);
 
-                    // Construir y enviar tabla (columnas: #, Nickname, Partidas, Kills, Daño, Puntos)
-                    var messages = BuildTableMessagesOrdered(ranking);
+                    var messages = BuildTableMessagesOrdered(playedRanking);
                     foreach (var msg in messages)
                     {
                         await channel.SendMessageAsync(msg);
                         await Task.Delay(200);
                     }
 
-                    // Mensaje final con enlace clicable
                     var link = "https://www.tnaesport.somee.com";
                     await channel.SendMessageAsync($"Para ver más detalles y diferentes rankings, visitá {link}");
 
-                    // Etiquetar rol debajo del enlace
                     var roleMention = "<@&942961256099352628>";
-                    //var roleMention = "<@&1417199787488575689>"; 
                     await channel.SendMessageAsync(roleMention);
 
                     Console.WriteLine("📤 Mensajes de ranking enviados correctamente.");
@@ -205,7 +204,6 @@ class Program
             await Task.Delay(-1);
     }
 
-    // Build messages with order: #, Nickname, Partidas, Kills, Daño, Puntos
     static List<string> BuildTableMessagesOrdered(List<TNA.BLL.DTOs.PlayerRankingDTO> ranking)
     {
         const int MaxMessageLen = 1900;

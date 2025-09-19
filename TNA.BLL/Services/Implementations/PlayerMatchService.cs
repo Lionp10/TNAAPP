@@ -28,7 +28,6 @@ namespace TNA.BLL.Services.Implementations
             if (matches is null || matches.Count == 0)
                 return new List<PlayerRankingDTO>();
 
-            // Agrupar por jugador y calcular totales + medias por partido
             var perPlayer = matches
                 .GroupBy(m => m.PlayerId, StringComparer.OrdinalIgnoreCase)
                 .Select(g =>
@@ -69,12 +68,10 @@ namespace TNA.BLL.Services.Implementations
                 })
                 .ToList();
 
-            // Nicknames
             var members = await _clanMember_repository.GetActiveMembersAsync(cancellationToken).ConfigureAwait(false);
             var nickByPlayer = members?.ToDictionary(m => m.PlayerId, m => m.Nickname, StringComparer.OrdinalIgnoreCase)
                                ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            // Calcular máximos sobre medias para normalizar
             double maxAvgDbnos = perPlayer.Max(x => x.AvgDBNOs);
             double maxAvgAssists = perPlayer.Max(x => x.AvgAssists);
             double maxAvgKills = perPlayer.Max(x => x.AvgKills);
@@ -86,7 +83,6 @@ namespace TNA.BLL.Services.Implementations
             double minAvgWinPlace = perPlayer.Min(x => x.AverageWinPlace);
             double maxAvgWinPlace = perPlayer.Max(x => x.AverageWinPlace);
 
-            // Pesos (suma positivos ~= 1)
             const double wDbnos = 0.08;
             const double wAssists = 0.08;
             const double wKills = 0.30;
@@ -101,7 +97,6 @@ namespace TNA.BLL.Services.Implementations
 
             foreach (var p in perPlayer)
             {
-                // Normalizaciones (seguras)
                 double normDbnos = maxAvgDbnos > 0 ? p.AvgDBNOs / maxAvgDbnos : 0;
                 double normAssists = maxAvgAssists > 0 ? p.AvgAssists / maxAvgAssists : 0;
                 double normKills = maxAvgKills > 0 ? p.AvgKills / maxAvgKills : 0;
@@ -110,7 +105,6 @@ namespace TNA.BLL.Services.Implementations
                 double normRevives = maxAvgRevives > 0 ? p.AvgRevives / maxAvgRevives : 0;
                 double normTimeSurvived = maxAvgTimeSurvived > 0 ? p.AvgTimeSurvived / maxAvgTimeSurvived : 0;
 
-                // WinPlace: menor es mejor => invertir
                 double normWinPlace;
                 if (Math.Abs(maxAvgWinPlace - minAvgWinPlace) < 1e-9)
                 {
@@ -124,7 +118,6 @@ namespace TNA.BLL.Services.Implementations
 
                 double normAvgTeamKills = maxAvgTeamKills > 0 ? p.AvgTeamKills / maxAvgTeamKills : 0;
 
-                // Score positivo (medias)
                 double positiveScore =
                     wDbnos * normDbnos +
                     wAssists * normAssists +
@@ -139,7 +132,6 @@ namespace TNA.BLL.Services.Implementations
 
                 double baseScore = Math.Clamp(positiveScore - penalty, 0.0, 1.0);
 
-                // Factor de confiabilidad: 10 partidas => 1.0
                 double reliability = Math.Min(1.0, Math.Log(p.MatchesCount + 1) / Math.Log(11));
 
                 double finalNormalized = Math.Clamp(baseScore * reliability, 0.0, 1.0);
@@ -158,13 +150,11 @@ namespace TNA.BLL.Services.Implementations
                     TotalRevives = p.TotalRevives,
                     TotalTeamKill = p.TotalTeamKills,
                     TotalTimeSurvived = p.TotalTimeSurvived,
-                    // Aquí redondeamos el AvgWinPlace a int como pediste
                     AverageWinPlace = (int)Math.Round(p.AverageWinPlace, MidpointRounding.AwayFromZero),
                     TotalPoints = totalPoints
                 });
             }
 
-            // Añadir miembros activos que no aparecen en matches (todos 0). No se guardan en BD.
             var presentIds = results.Select(r => r.PlayerId).ToHashSet(StringComparer.OrdinalIgnoreCase);
             if (members != null && members.Count > 0)
             {
@@ -192,7 +182,6 @@ namespace TNA.BLL.Services.Implementations
                 }
             }
 
-            // Ordenar: por puntos desc, desempate por MatchesCount y luego por TotalKills
             var ordered = results
                 .OrderByDescending(r => r.TotalPoints)
                 .ThenByDescending(r => r.MatchesCount)

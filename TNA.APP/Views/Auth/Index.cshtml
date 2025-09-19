@@ -10,7 +10,6 @@
     <section class="auth-section">
         <div class="auth-container">
             <div class="auth-wrapper">
-                <!-- Brand Header -->
                 <div class="auth-brand">
                     <div class="brand-icon">
                         <i class="bi bi-controller"></i>
@@ -21,14 +20,12 @@
                     </div>
                 </div>
 
-                <!-- Login Card -->
                 <div class="auth-card">
                     <div class="auth-card-header">
                         <h1 class="auth-title">Bienvenido de vuelta</h1>
                         <p class="auth-subtitle">Ingresa tus credenciales para continuar</p>
                     </div>
 
-                    @* Mensajes provenientes de TempData (ej. tras ResetPassword) *@
                     @if (TempData["Message"] != null)
                     {
                         <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; padding: 1rem; color: #6ee7b7; font-size: 0.875rem; margin: 0 0 1rem 0;">
@@ -104,9 +101,8 @@
                     </form>
                 </div>
 
-                <!-- Footer -->
                 <div class="auth-footer">
-                    <p>¿Necesitas ayuda? <a href="#" class="support-link">Contacta soporte</a></p>
+                    <p>¿Necesitas ayuda? <a href="@Url.Action("Contact", "Support")" class="support-link">Contacta soporte</a></p>
                 </div>
             </div>
         </div>
@@ -129,7 +125,6 @@
             }
         }
 
-        // Mostrar foco si no hay mensaje (mejor UX tras redirecciones)
         $(document).ready(function() {
             if (!$('.alert').length) {
                 $('input[name="Email"]').focus();

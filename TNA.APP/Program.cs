@@ -8,55 +8,46 @@ using TNA.BLL.Services.Implementations;
 using Microsoft.AspNetCore.Identity;
 using TNA.DAL.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using TNA.BLL.Utils; 
 using TNA.BLL.DTOs;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Bind Pubg options from configuration
 builder.Services.Configure<PubgOptions>(builder.Configuration.GetSection("Pubg"));
 
-// Bind EmailSettings -> EmailDTO
 builder.Services.Configure<EmailDTO>(builder.Configuration.GetSection("EmailSettings"));
 
-// Registrar AutoMapper (escanea el ensamblado del perfil)
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile).Assembly);
 
-// Registrar HttpClient factory
 builder.Services.AddHttpClient();
 
-// Registrar PasswordHasher para hashear contraseñas en UserService
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
-// Registrar DbContext usando la cadena de conexión
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<TNA.DAL.DbContext.TNADbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// Registrar repositorios existentes
 builder.Services.AddScoped<IClanRepository, ClanRepository>();
 builder.Services.AddScoped<IClanMemberRepository, ClanMemberRepository>();
 builder.Services.AddScoped<IClanMemberSMRepository, ClanMemberSMRepository>();
 builder.Services.AddScoped<IMatchRepository, MatchRepository>();
 builder.Services.AddScoped<IPlayerMatchRepository, PlayerMatchRepository>();
 
-// Registrar repositorio y servicio de Usuarios (recientemente añadidos)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
-// Registrar servicio de correo (tu implementación) — solo IEmailService
 builder.Services.AddScoped<IEmailService, EmailService>();
 
-// Registrar servicios de negocio
 builder.Services.AddScoped<IClanService, ClanServcice>();
 builder.Services.AddScoped<IClanMemberService, ClanMemberService>();
 builder.Services.AddScoped<IClanMemberSMService, ClanMemberSMService>();
 builder.Services.AddScoped<IPubgService, PubgService>();
 builder.Services.AddScoped<IPlayerMatchService, PlayerMatchService>();
 
-// Authentication: establecer esquema por defecto y cookie auth
+builder.Services.AddAwsS3(builder.Configuration);
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;

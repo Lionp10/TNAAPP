@@ -15,7 +15,12 @@ namespace TNA.BLL.Mapping
             CreateMap<Match, MatchDTO>().ReverseMap();
             CreateMap<PlayerMatch, PlayerMatchDTO>().ReverseMap();
 
-            CreateMap<User, UserDTO>().ReverseMap();
+            CreateMap<User, UserDTO>()
+                .ForMember(dest => dest.RoleDescription, opt => opt.MapFrom(src => src.Role != null ? src.Role.Description : null))
+                .ForMember(dest => dest.MemberNickname, opt => opt.MapFrom(src => src.Member != null ? src.Member.Nickname : null))
+                .ReverseMap()
+                .ForMember(dest => dest.Role, opt => opt.Ignore())
+                .ForMember(dest => dest.Member, opt => opt.Ignore());
 
             CreateMap<UserCreateDTO, User>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())

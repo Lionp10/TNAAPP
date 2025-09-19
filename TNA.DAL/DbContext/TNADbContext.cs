@@ -12,8 +12,6 @@ namespace TNA.DAL.DbContext
         public DbSet<ClanMemberSocialMedia> ClanMemberSocialMedias { get; set; } = null!;
         public DbSet<Match> Matches { get; set; } = null!;
         public DbSet<PlayerMatch> PlayerMatches { get; set; } = null!;
-
-        // Nuevas entidades
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Role> Roles { get; set; } = null!;
 
@@ -52,13 +50,11 @@ namespace TNA.DAL.DbContext
                 b.Property(p => p.MatchCreatedAt).HasMaxLength(50).IsRequired();
             });
 
-            // Configuración de Role
             modelBuilder.Entity<Role>(b =>
             {
                 b.Property(p => p.Description).IsRequired();
             });
 
-            // Configuración de User
             modelBuilder.Entity<User>(b =>
             {
                 b.Property(p => p.Nickname).HasMaxLength(50).IsRequired();
@@ -67,17 +63,13 @@ namespace TNA.DAL.DbContext
                 b.Property(p => p.MemberId).IsRequired(false);
                 b.Property(p => p.CreatedAt).IsRequired(false);
                 b.Property(p => p.Enabled).IsRequired();
-
-                // Índice único sugerido en Email (opcional)
                 b.HasIndex(p => p.Email).IsUnique();
 
-                // Relación con Role (RoleId FK)
-                b.HasOne<Role>()
+                b.HasOne(u => u.Role)
                  .WithMany()
                  .HasForeignKey(u => u.RoleId)
                  .OnDelete(DeleteBehavior.Restrict);
 
-                // Relación opcional con ClanMember (MemberId FK)
                 b.HasOne(u => u.Member)
                  .WithMany()
                  .HasForeignKey(u => u.MemberId)

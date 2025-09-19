@@ -1,0 +1,70 @@
+﻿@model TNA.APP.Models.SupportRequestViewModel
+
+@{
+    ViewData["Title"] = "Contacta a soporte";
+}
+
+<link rel="stylesheet" href="~/css/auth.css" />
+
+@section Hero {
+    <section class="auth-container w-100 m-auto">
+        <div class="auth-background"></div>
+
+        <div class="auth-card-wrapper mx-auto" style="max-width:760px; width:100%; padding:1.5rem;">
+            <div class="auth-card" style="width:100%;">
+                <div class="auth-card-header">
+                    <h3 class="auth-title">Contacta a soporte</h3>
+                </div>
+
+                <div class="auth-card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+                    }
+
+                    <form asp-action="Contact" method="post" enctype="multipart/form-data" novalidate>
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input asp-for="Name" class="form-control" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Apellido</label>
+                            <input asp-for="LastName" class="form-control" />
+                            <span asp-validation-for="LastName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Mensaje</label>
+                            <textarea asp-for="Message" class="form-control" rows="8"></textarea>
+                            <span asp-validation-for="Message" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Adjuntar archivos (opcional)</label>
+                            <input asp-for="Attachments" type="file" class="form-control" name="Attachments" multiple />
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Enviar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,117 @@
+﻿@model TNA.APP.Models.MemberViewModel
+
+@{
+    ViewData["Title"] = "Detalle miembro";
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+
+    string imgSrc;
+    var pi = Model.Member?.ProfileImage ?? string.Empty;
+    if (string.IsNullOrWhiteSpace(pi))
+    {
+        imgSrc = Url.Content("~/images/avatar-placeholder.webp");
+    }
+    else if (pi.StartsWith("~") || pi.StartsWith("/"))
+    {
+        imgSrc = Url.Content(pi);
+    }
+    else if (pi.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+    {
+        imgSrc = pi;
+    }
+    else
+    {
+        imgSrc = Url.Action("Image", "Media", new { key = pi }) ?? Url.Content("~/images/avatar-placeholder.webp");
+    }
+
+    string IconClassFor(string id)
+    {
+        return id?.ToUpperInvariant() switch
+        {
+            "IG" => "bi-instagram",
+            "YT" => "bi-youtube",
+            "DC" or "DI" => "bi-discord",
+            "TW" => "bi-twitch",
+            "FB" => "bi-facebook",
+            "X" => "bi-x",
+            "ST" => "bi-steam",
+            "TK" => "bi bi-tiktok", 
+            "RD" => "bi-reddit",
+            "SP" => "bi-chat-square",
+            "WS" => "bi-whatsapp",
+            _ => "bi-link-45deg"
+        };
+    }
+}
+
+<section class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">Detalle de miembro</h2>
+            <small class="text-light">Información completa</small>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-outline-light">Volver</a>
+        </div>
+    </div>
+
+    <div class="card glass-modal p-3">
+        <div class="row">
+            <div class="col-md-8">
+                <h4 class="mb-2">@Model.Member.Nickname</h4>
+                <p class="text-muted mb-1">@($"{Model.Member.FirstName} {Model.Member.LastName}")</p>
+                <p class="text-light mb-1"><strong>PlayerId:</strong> <span class="text-truncate d-inline-block" style="max-width:560px;">@Model.Member.PlayerId</span></p>
+                <p class="text-light mb-1"><strong>ClanId:</strong> <span class="text-truncate d-inline-block" style="max-width:560px;">@Model.Member.ClanId</span></p>
+                <p class="mb-0">
+                    <strong>Habilitado:</strong>
+                    @if (Model.Member.Enabled)
+                    {
+                        <span class="badge rounded-pill bg-success ms-2">Sí</span>
+                    }
+                    else
+                    {
+                        <span class="badge rounded-pill bg-secondary ms-2">No</span>
+                    }
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <img src="@imgSrc" alt="Avatar" class="img-fluid rounded" style="max-height:120px;" />
+            </div>
+        </div>
+
+        <hr />
+
+        <h5>Redes sociales</h5>
+        @if (Model.SocialMedias == null || !Model.SocialMedias.Any())
+        {
+            <p class="text-light">No hay redes registradas.</p>
+        }
+        else
+        {
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var s in Model.SocialMedias.Where(x => x.Enabled))
+                {
+                    var url = string.IsNullOrWhiteSpace(s.SocialMediaUrl) ? "#" : s.SocialMediaUrl;
+                    var icon = IconClassFor(s.SocialMediaId);
+                    <a class="btn btn-outline-light btn-sm d-flex align-items-center gap-2" href="@url" target="_blank" rel="noopener noreferrer" title="@s.SocialMediaId">
+                        <i class="@icon"></i>
+                        <span class="small">@s.SocialMediaId</span>
+                    </a>
+                }
+
+                @foreach (var s in Model.SocialMedias.Where(x => !x.Enabled))
+                {
+                    var icon = IconClassFor(s.SocialMediaId);
+                    <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" disabled title="Inactivo">
+                        <i class="@icon"></i>
+                        <span class="small">@s.SocialMediaId</span>
+                    </button>
+                }
+            </div>
+        }
+
+        <div class="mt-4 text-end">
+            <a asp-action="Edit" asp-route-id="@Model.Member.Id" class="btn btn-primary me-2">Editar</a>
+            <a asp-action="Index" class="btn btn-outline-light">Volver</a>
+        </div>
+    </div>
+</section>

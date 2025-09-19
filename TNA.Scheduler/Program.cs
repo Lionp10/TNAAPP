@@ -9,7 +9,6 @@ using TNA.DAL.Repositories.Interfaces;
 using TNA.Scheduler;
 
 var host = Host.CreateDefaultBuilder(args)
-    // Forzar logging a consola y nivel mínimo
     .ConfigureLogging(logging =>
     {
         logging.ClearProviders();
@@ -18,20 +17,15 @@ var host = Host.CreateDefaultBuilder(args)
     })
     .ConfigureServices((context, services) =>
     {
-        // Config
         services.Configure<PubgOptions>(context.Configuration.GetSection("Pubg"));
 
-        // HttpClient factory
         services.AddHttpClient();
 
-        // AutoMapper
         services.AddAutoMapper(typeof(AutoMapperProfile).Assembly);
 
-        // DbContext - usa la misma connection string que la app web
         var connectionString = context.Configuration.GetConnectionString("DefaultConnection");
         services.AddDbContext<TNADbContext>(options => options.UseSqlServer(connectionString));
 
-        // Repositorios + servicios (mismas implementaciones que en la web)
         services.AddScoped<IClanRepository, ClanRepository>();
         services.AddScoped<IClanMemberRepository, ClanMemberRepository>();
         services.AddScoped<IMatchRepository, MatchRepository>();
@@ -40,7 +34,6 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddScoped<IClanService, ClanServcice>();
         services.AddScoped<IPubgService, PubgService>();
 
-        // Worker que ejecuta la tarea diaria
         services.AddHostedService<DailyWorker>();
     })
     .Build();

@@ -1,9 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
-using System.Threading;
-using System.Threading.Tasks;
 using TNA.BLL.DTOs;
 using TNA.BLL.Services.Interfaces;
 
@@ -21,6 +20,9 @@ namespace TNA.BLL.Services.Implementations
         }
 
         public async Task SendEmailAsync(string to, string subject, string body, bool isHtml = true, CancellationToken cancellationToken = default)
+            => await SendEmailAsync(to, subject, body, isHtml, (IEnumerable<IFormFile>?)null, cancellationToken).ConfigureAwait(false);
+
+        public async Task SendEmailAsync(string to, string subject, string body, bool isHtml, IEnumerable<IFormFile>? attachments, CancellationToken cancellationToken = default)
         {
             using var msg = new MailMessage();
             msg.From = new MailAddress(_settings.FromEmail, _settings.FromName);
@@ -28,6 +30,24 @@ namespace TNA.BLL.Services.Implementations
             msg.Subject = subject;
             msg.Body = body;
             msg.IsBodyHtml = isHtml;
+
+            if (attachments != null)
+            {
+                foreach (var file in attachments)
+                {
+                    try
+                    {
+                        if (file == null || file.Length == 0 || string.IsNullOrWhiteSpace(file.FileName)) continue;
+                        var stream = file.OpenReadStream();
+                        var attachment = new Attachment(stream, file.FileName, string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
+                        msg.Attachments.Add(attachment);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "No se pudo adjuntar fichero {FileName}", file?.FileName);
+                    }
+                }
+            }
 
             using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
             {
@@ -43,7 +63,6 @@ namespace TNA.BLL.Services.Implementations
 
             try
             {
-                // SmtpClient.SendMailAsync acepta CancellationToken a partir de .NET 6
                 await client.SendMailAsync(msg, cancellationToken).ConfigureAwait(false);
                 _logger.LogInformation("Email enviado a {To} (subject: {Subject})", to, subject);
             }
@@ -59,9 +78,8 @@ namespace TNA.BLL.Services.Implementations
             }
         }
 
-        // Compatibilidad para reflexión / usos alternativos
         public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken = default)
-            => SendEmailAsync(to, subject, body, true, cancellationToken);
+            => SendEmailAsync(to, subject, body, true, cancellationToken: cancellationToken);
 
         public void Send(string to, string subject, string body)
             => SendEmailAsync(to, subject, body, true).GetAwaiter().GetResult();

@@ -9,6 +9,9 @@
         public int? MemberId { get; set; }
         public DateTime? CreatedAt { get; set; }
         public bool Enabled { get; set; }
+
+        public string? RoleDescription { get; set; }
+        public string? MemberNickname { get; set; }
     }
 
     public class UserCreateDTO

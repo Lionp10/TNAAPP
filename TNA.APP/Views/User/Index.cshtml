@@ -1,93 +1,31 @@
-﻿@model IEnumerable<TNA.BLL.DTOs.UserDTO>
+﻿@model TNA.APP.Models.PagedListViewModel<TNA.BLL.DTOs.UserDTO>
 
 @{
     ViewData["Title"] = "Usuarios";
     Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+
+    var successMsg = TempData["SuccessMessage"] as string;
+    var errorMsg = TempData["ErrorMessage"] as string;
+    var hasTempMsg = !string.IsNullOrEmpty(successMsg) || !string.IsNullOrEmpty(errorMsg);
+    var isSuccess = !string.IsNullOrEmpty(successMsg);
+    var tempMsg = isSuccess ? successMsg : errorMsg;
 }
 
 <style>
-    /* Mejora de tablas responsivas: en móvil transformamos cada fila en 'card' apilada
-       y mostramos la etiqueta de la columna usando ::before para no tocar el HTML. */
-
-    .table-responsive {
-        -webkit-overflow-scrolling: touch;
-    }
-
-    /* Sólo en pantallas pequeñas: convertir tabla en lista apilada */
+    .table-responsive { -webkit-overflow-scrolling: touch; }
     @@media (max-width: 768px) {
-        .table-responsive .table thead
-
-    {
-        display: none; /* ocultamos cabecera */
+        .table-responsive .table thead { display: none; }
+        .table-responsive .table, .table-responsive .table tbody, .table-responsive .table tr { display: block; width:100%; }
+        .table-responsive .table tr { margin-bottom:.75rem; background: rgba(15,23,42,0.6); border-radius:8px; padding:.5rem; }
+        .table-responsive .table td { display:flex; justify-content:space-between; align-items:center; padding:.5rem .65rem; border:none; width:100%; color:var(--text-secondary,#e2e8f0); background:transparent; }
+        .table-responsive .table td::before { content: attr(data-label); font-weight:700; color:var(--text-muted,#94a3b8); margin-right:.75rem; min-width:95px; display:inline-block; text-transform:uppercase; font-size:.75rem; letter-spacing:.4px; }
+        .table-responsive .table td.text-end, .table-responsive .table td:last-child { justify-content:flex-end; }
     }
 
-    .table-responsive .table,
-    .table-responsive .table tbody,
-    .table-responsive .table tr {
-        display: block;
-        width: 100%;
-    }
-
-        .table-responsive .table tr {
-            margin-bottom: 0.75rem;
-            background: rgba(15,23,42,0.6);
-            border-radius: 8px;
-            padding: 0.5rem;
-        }
-
-        .table-responsive .table td {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 0.65rem;
-            border: none;
-            width: 100%;
-            color: var(--text-secondary, #e2e8f0);
-            background: transparent;
-        }
-
-            /* Label generado antes del contenido (columna) */
-            .table-responsive .table td::before {
-                content: attr(data-label);
-                font-weight: 700;
-                color: var(--text-muted, #94a3b8);
-                margin-right: 0.75rem;
-                min-width: 95px;
-                display: inline-block;
-                text-transform: uppercase;
-                font-size: 0.75rem;
-                letter-spacing: 0.4px;
-            }
-
-            /* Asegurar que la columna de acciones no se rompa visualmente */
-            .table-responsive .table td.text-end,
-            .table-responsive .table td:last-child {
-                justify-content: flex-end;
-            }
-
-            /* Ajustes visuales para badges y botones */
-            .table-responsive .table td .badge {
-                font-size: 0.75rem;
-                padding: 0.35rem 0.5rem;
-            }
-
-            .table-responsive .table td .btn {
-                padding: 0.28rem 0.45rem;
-                font-size: 0.85rem;
-            }
-
-    }
-
-    /* Alternativa: permitir scroll horizontal si prefieres mantener la tabla intacta */
-    @@media (max-width: 550px) {
-        .table-responsive
-
-    {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    }
+    nav.pagination-wrap { margin-top: 1rem; }
+    .pagination { gap:.375rem; }
+    .pagination .page-link { border-radius:.5rem; padding:.28rem .5rem; min-width:34px; }
+    .pagination .page-item.active .page-link { background: var(--bs-primary,#0d6efd); color:#fff; font-weight:700; box-shadow:0 6px 16px rgba(13,110,253,0.12); }
 </style>
 
 <section class="container mt-4">
@@ -103,20 +41,28 @@
         </div>
     </div>
 
-    @if (TempData["SuccessMessage"] != null)
+    @if (hasTempMsg)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-        </div>
+        <div class="alert @(isSuccess ? "alert-success" : "alert-danger")">@tempMsg</div>
     }
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+
+    <div class="modal fade confirm-delete" id="confirmHardDeleteModal" tabindex="-1" aria-hidden="true" aria-labelledby="confirmHardDeleteLabel">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmHardDeleteLabel">Eliminar usuario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmHardDeleteMessage">Esta acción eliminará el usuario permanentemente. ¿Desea continuar?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnConfirmHardDelete" class="btn btn-danger">Eliminar permanentemente</button>
+                </div>
+            </div>
         </div>
-    }
+    </div>
 
     <div class="table-responsive">
         <table class="table table-borderless table-hover align-middle">
@@ -133,24 +79,39 @@
                 </tr>
             </thead>
             <tbody>
-                @if (Model == null || !Model.Any())
+                @if (Model?.Items == null || !Model.Items.Any())
                 {
-                    <tr>
-                        <td colspan="8" class="text-center text-muted py-4">No hay usuarios para mostrar.</td>
-                    </tr>
+                    <tr><td colspan="8" class="text-center text-muted py-4">No hay usuarios para mostrar.</td></tr>
                 }
                 else
                 {
-                    var index = 1;
-                    foreach (var user in Model)
+                    var startIndex = (Model.Page - 1) * Model.PageSize + 1;
+                    var idx = startIndex;
+                    foreach (var user in Model.Items)
                     {
                         <tr>
-                            <td class="fw-bold">@index</td>
+                            <td class="fw-bold">@idx</td>
                             <td>@user.Nickname</td>
                             <td>@user.Email</td>
-                            <td>@user.RoleId</td>
-                            <td>@(user.MemberId?.ToString() ?? "-")</td>
+                            @{
+                                var roleDesc = (user.RoleDescription ?? "").Trim();
+                                string roleBadgeClass;
+                                switch (roleDesc.ToLowerInvariant())
+                                {
+                                    case "administrator": roleBadgeClass = "bg-success"; break;
+                                    case "moderator": roleBadgeClass = "bg-warning text-dark"; break;
+                                    case "member": roleBadgeClass = "bg-primary"; break;
+                                    case "user": roleBadgeClass = "bg-light text-dark"; break;
+                                    default: roleBadgeClass = "bg-secondary"; break;
+                                }
+                            }
+                            <td data-label="Rol"><span class="badge @roleBadgeClass">@($"{user.RoleId} - {(!string.IsNullOrEmpty(user.RoleDescription) ? user.RoleDescription : "-")}")</span></td>
+                            <td data-label="Miembro">
+                                @if (user.MemberId.HasValue) { <span class="badge bg-primary">@($"{user.MemberId} - {(!string.IsNullOrEmpty(user.MemberNickname) ? user.MemberNickname : "-")}")</span> }
+                                else { <span class="badge bg-secondary">-</span> }
+                            </td>
                             <td>@(user.CreatedAt.HasValue ? user.CreatedAt.Value.ToString("yyyy-MM-dd HH:mm") : "-")</td>
+
                             <td>
                                 @if (user.Enabled)
                                 {
@@ -161,38 +122,73 @@
                                     <span class="badge bg-secondary">Inactivo</span>
                                 }
                             </td>
-                            <td class="text-end">
-                                <a asp-action="Details" asp-route-id="@user.Id" class="btn btn-sm btn-light me-1" title="Detalles">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-sm btn-primary text-white me-1" title="Editar">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <a asp-action="Delete" asp-route-id="@user.Id" class="btn btn-sm btn-warning text-white me-1" title="Deshabilitar">
-                                    <i class="bi bi-person-x"></i>
-                                </a>
 
-                                <form asp-action="HardDelete" method="post" class="d-inline-block" onsubmit="return confirmHardDelete();">
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@user.Id" class="btn btn-sm btn-light me-1" title="Detalles"><i class="bi bi-eye"></i></a>
+                                <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-sm btn-primary text-white me-1" title="Editar"><i class="bi bi-pencil"></i></a>
+                                <a asp-action="Delete" asp-route-id="@user.Id" class="btn btn-sm btn-warning text-white me-1" title="Deshabilitar"><i class="bi bi-person-x"></i></a>
+                                <form asp-action="HardDelete" method="post" class="d-inline-block hard-delete-form">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@user.Id" />
-                                    <button type="submit" class="btn btn-sm btn-danger" title="Eliminar permanentemente">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <button type="button" class="btn btn-sm btn-danger btn-hard-delete" title="Eliminar permanentemente" data-user="@user.Nickname"><i class="bi bi-trash"></i></button>
                                 </form>
                             </td>
                         </tr>
-                        index++;
+                        idx++;
                     }
                 }
             </tbody>
         </table>
     </div>
+
+    @if (Model != null && Model.TotalPages > 1)
+    {
+        <nav aria-label="Paginación usuarios" class="pagination-wrap">
+            <ul class="pagination justify-content-end pagination-sm">
+                <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(Model.Page - 1)">Anterior</a>
+                </li>
+                @for (var p = 1; p <= Model.TotalPages; p++)
+                {
+                    var active = p == Model.Page ? "active" : "";
+                    <li class="page-item @active"><a class="page-link" asp-action="Index" asp-route-page="@p">@p</a></li>
+                }
+                <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@(Model.Page + 1)">Siguiente</a>
+                </li>
+            </ul>
+        </nav>
+    }
 </section>
 
 @section Scripts {
     <script>
-        function confirmHardDelete() {
-            return confirm('Esta acción eliminará el usuario permanentemente. ¿Desea continuar?');
-        }
+        (function() {
+            document.addEventListener('DOMContentLoaded', function () {
+                var currentForm = null;
+                var confirmModalEl = document.getElementById('confirmHardDeleteModal');
+                if (!confirmModalEl) return;
+                var confirmModal = new bootstrap.Modal(confirmModalEl);
+                var btnConfirm = document.getElementById('btnConfirmHardDelete');
+                var messageEl = document.getElementById('confirmHardDeleteMessage');
+
+                document.querySelectorAll('.btn-hard-delete').forEach(function (btn) {
+                    btn.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        currentForm = btn.closest('form.hard-delete-form');
+                        var nickname = btn.getAttribute('data-user') || 'este usuario';
+                        if (messageEl) messageEl.textContent = 'Esta acción eliminará ' + nickname + ' permanentemente. ¿Desea continuar?';
+                        confirmModal.show();
+                    });
+                });
+
+                if (btnConfirm) {
+                    btnConfirm.addEventListener('click', function () {
+                        if (!currentForm) { confirmModal.hide(); return; }
+                        try { currentForm.submit(); } catch (e) { console.error(e); }
+                    });
+                }
+            });
+        })();
     </script>
 }

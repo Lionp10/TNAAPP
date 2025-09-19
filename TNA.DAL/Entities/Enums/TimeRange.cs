@@ -8,9 +8,9 @@ namespace TNA.DAL.Entities.Enums
 {
     public enum TimeRange
     {
-        LastDay,        // "Último día" = ayer (día calendario anterior, en zona GMT-3)
-        PreviousWeek,   // "Última semana" = semana calendario anterior (Lun-Dom) en GMT-3
-        LastMonth,      // "Último mes" = mes calendario anterior en GMT-3
-        All             // Histórico (sin filtro de fecha)
+        LastDay,       
+        PreviousWeek,   
+        LastMonth,      
+        All             
     }
 }

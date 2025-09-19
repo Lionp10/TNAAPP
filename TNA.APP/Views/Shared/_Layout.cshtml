@@ -53,30 +53,25 @@
             transition: transform .18s ease;
         }
 
-        /* Make sure fixed navbar is above content */
         .site-navbar {
             z-index: 1040;
         }
 
-        /* Smooth transition when body padding changes */
         body {
             transition: padding-top .18s ease;
         }
 
-        /* Expanded mobile menu: give it a background and spacing so content below isn't visible through it */
         .navbar-collapse.show {
             background: rgba(7, 11, 16, 0.96);
             padding: 0.75rem 1rem;
             border-bottom: 1px solid rgba(255,255,255,0.03);
         }
 
-        /* Mobile stacked links: readable and spacing */
         .navbar-collapse .navbar-nav .nav-link {
             color: var(--text-secondary, #e2e8f0) !important;
             padding: 0.5rem 0.25rem;
         }
 
-        /* Active underline aligned at the start of the link text (no centering) */
         .navbar-nav .nav-link {
             position: relative;
         }
@@ -86,14 +81,13 @@
             position: absolute;
             height: 4px;
             width: 36px;
-            left: 0; /* start under the text */
+            left: 0; 
             transform: none;
             bottom: -6px;
             background: var(--primary-blue, #0ea5e9);
             border-radius: 4px;
         }
 
-        /* Slight tweak for very small screens */
         @@media (max-width: 576px) {
             .navbar-nav .nav-link.active::after {
                 width: 28px;
@@ -104,7 +98,6 @@
             }
         }
 
-        /* Ensure dropdown toggle (user) links color consistent */
         .navbar-nav .dropdown-toggle {
             color: var(--text-secondary, #e2e8f0) !important;
         }
@@ -138,18 +131,15 @@
                         <a class="nav-link @IsActivePath("/Tournaments")" href="@Url.Action("Tournaments", "Home")">Torneos</a>
                     </li>
 
-                    @* Area de autenticación: mostrar "Iniciar sesión" o dropdown con nickname *@
                     @if (User?.Identity?.IsAuthenticated == true)
                     {
                         var nickname = User.Identity?.Name ?? User.FindFirst(ClaimTypes.Name)?.Value ?? "Usuario";
                         var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                        // leer claim roleid (si existe)
                         var roleClaim = User.FindFirst("roleid")?.Value;
                         int roleId = 0;
                         int.TryParse(roleClaim, out roleId);
 
-                        // Si no es admin (roleId != 1) apuntamos al Home/Profile; si es admin apuntamos a User/Details
                         var profileUrl = roleId == 1
                             ? Url.Action("Details", "User", new { id = idClaim }) ?? "#"
                             : Url.Action("Profile", "Home") ?? "#";
@@ -165,7 +155,6 @@
                                     </a>
                                 </li>
 
-                                @* Mostrar "Panel admin" solo si roleId == 1 *@
                                 @if (roleId == 1)
                                 {
                                     <li>
@@ -276,36 +265,31 @@
             function adjustBodyPadding() {
                 try {
                     var h = Math.ceil(nav.getBoundingClientRect().height);
-                    // Apply padding to body so page content is always pushed below the fixed navbar
                     document.body.style.paddingTop = h + 'px';
                 } catch (e) {
-                    // no-op
+
                 }
             }
 
-            // inicializar cuando DOM esté listo
             document.addEventListener('DOMContentLoaded', function () {
                 adjustBodyPadding();
             }, { passive: true });
 
-            // Observador de cambios en el navbar (incluye cuando collapse cambia tamaño)
             if (window.ResizeObserver) {
                 try {
                     var ro = new ResizeObserver(function () { adjustBodyPadding(); });
                     ro.observe(nav);
-                } catch (e) { /* ignore */ }
+                } catch (e) { }
             } else {
                 window.addEventListener('resize', adjustBodyPadding, { passive: true });
             }
 
-            // Eventos collapse de Bootstrap para recalcular cuando el menú móvil se abre/cierra
             var collapseEl = document.getElementById('mainNav');
             if (collapseEl) {
                 collapseEl.addEventListener('shown.bs.collapse', adjustBodyPadding);
                 collapseEl.addEventListener('hidden.bs.collapse', adjustBodyPadding);
             }
 
-            // Aseguramos recalculo en load por si hay imágenes que cambian el tamaño del navbar
             window.addEventListener('load', function () { adjustBodyPadding(); }, { passive: true });
         })();
     </script>

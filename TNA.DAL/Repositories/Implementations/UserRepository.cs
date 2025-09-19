@@ -18,6 +18,8 @@ namespace TNA.DAL.Repositories.Implementations
         {
             return await _db.Users
                 .AsNoTracking()
+                .Include(u => u.Member)
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
         }
 
@@ -25,6 +27,8 @@ namespace TNA.DAL.Repositories.Implementations
         {
             return await _db.Users
                 .AsNoTracking()
+                .Include(u => u.Member)
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
         }
 
@@ -32,6 +36,8 @@ namespace TNA.DAL.Repositories.Implementations
         {
             return await _db.Users
                 .AsNoTracking()
+                .Include(u => u.Member)
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Nickname == nickname, cancellationToken);
         }
 
@@ -39,6 +45,8 @@ namespace TNA.DAL.Repositories.Implementations
         {
             return await _db.Users
                 .AsNoTracking()
+                .Include(u => u.Member)
+                .Include(u => u.Role)
                 .OrderBy(u => u.Nickname)
                 .ToListAsync(cancellationToken);
         }
@@ -48,6 +56,8 @@ namespace TNA.DAL.Repositories.Implementations
             return await _db.Users
                 .AsNoTracking()
                 .Where(u => u.RoleId == roleId)
+                .Include(u => u.Member)
+                .Include(u => u.Role)
                 .OrderBy(u => u.Nickname)
                 .ToListAsync(cancellationToken);
         }
@@ -58,7 +68,6 @@ namespace TNA.DAL.Repositories.Implementations
             if (string.IsNullOrWhiteSpace(user.Nickname)) throw new ArgumentException("Nickname is required.", nameof(user));
             if (string.IsNullOrWhiteSpace(user.PasswordHash)) throw new ArgumentException("PasswordHash is required.", nameof(user));
 
-            // Comprueba unicidad mínima (evita excepción por índice único)
             if (await EmailExistsAsync(user.Email, cancellationToken))
                 throw new InvalidOperationException("El email ya está registrado.");
 
@@ -66,7 +75,6 @@ namespace TNA.DAL.Repositories.Implementations
                 throw new InvalidOperationException("El nickname ya está en uso.");
 
             user.CreatedAt ??= DateTime.Now;
-            // Por defecto habilitado si no se especificó
             user.Enabled = user.Enabled;
 
             await _db.Users.AddAsync(user, cancellationToken);
@@ -80,7 +88,6 @@ namespace TNA.DAL.Repositories.Implementations
             var existing = await _db.Users.FirstOrDefaultAsync(u => u.Id == user.Id, cancellationToken);
             if (existing is null) throw new KeyNotFoundException($"User with Id {user.Id} not found.");
 
-            // Si cambia email o nickname, comprobar unicidad
             if (!string.Equals(existing.Email, user.Email, StringComparison.OrdinalIgnoreCase))
             {
                 if (await EmailExistsAsync(user.Email!, cancellationToken))
@@ -95,12 +102,10 @@ namespace TNA.DAL.Repositories.Implementations
                 existing.Nickname = user.Nickname!;
             }
 
-            // Actualiza campos permitidos
             existing.PasswordHash = user.PasswordHash;
             existing.RoleId = user.RoleId;
             existing.MemberId = user.MemberId;
             existing.Enabled = user.Enabled;
-            // No sobrescribimos CreatedAt por seguridad
 
             _db.Users.Update(existing);
             await _db.SaveChangesAsync(cancellationToken);

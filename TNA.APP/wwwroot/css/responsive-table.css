@@ -1,5 +1,4 @@
-﻿/* Solución completa para tabla responsive con header fijo */
-.table-container {
+﻿.table-container {
     position: relative;
     margin-top: 2rem;
     border-radius: 12px;
@@ -9,15 +8,13 @@
     border: 1px solid var(--border-subtle);
 }
 
-/* Wrapper para scroll horizontal */
 .table-scroll-wrapper {
     overflow-x: auto;
     overflow-y: visible;
-    max-height: 70vh; /* Altura máxima para permitir scroll vertical */
+    max-height: 70vh; 
     position: relative;
 }
 
-    /* Estilos para la scrollbar horizontal en webkit */
     .table-scroll-wrapper::-webkit-scrollbar {
         height: 8px;
     }
@@ -36,14 +33,12 @@
             background: rgba(148, 163, 184, 0.5);
         }
 
-/* Tabla con ancho mínimo para evitar compresión */
 .responsive-table {
-    min-width: 1200px; /* Ancho mínimo para mostrar todas las columnas */
+    min-width: 1200px; 
     margin-bottom: 0;
     background: transparent;
 }
 
-    /* Header fijo con z-index alto */
     .responsive-table thead th {
         position: sticky;
         top: 0;
@@ -60,7 +55,6 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
-    /* Cuerpo de la tabla */
     .responsive-table tbody {
         background: rgba(15, 23, 42, 0.95);
     }
@@ -91,91 +85,89 @@
             font-weight: 500;
             vertical-align: middle;
             border-color: rgba(148, 163, 184, 0.1);
-            white-space: nowrap; /* Evita que el texto se corte */
+            white-space: nowrap; 
         }
 
-    /* Columnas específicas con anchos mínimos */
     .responsive-table th:first-child,
     .responsive-table td:first-child {
-        min-width: 60px; /* Posición */
+        min-width: 60px; 
         text-align: center;
     }
 
     .responsive-table th:nth-child(2),
     .responsive-table td:nth-child(2) {
-        min-width: 120px; /* Jugador */
+        min-width: 120px; 
         font-weight: 600;
     }
 
     .responsive-table th:nth-child(3),
     .responsive-table td:nth-child(3) {
-        min-width: 80px; /* Partidas */
+        min-width: 80px; 
         text-align: center;
     }
 
     .responsive-table th:nth-child(4),
     .responsive-table td:nth-child(4) {
-        min-width: 90px; /* Derribos */
+        min-width: 90px; 
         text-align: center;
     }
 
     .responsive-table th:nth-child(5),
     .responsive-table td:nth-child(5) {
-        min-width: 100px; /* Asistencias */
+        min-width: 100px; 
         text-align: center;
     }
 
     .responsive-table th:nth-child(6),
     .responsive-table td:nth-child(6) {
-        min-width: 70px; /* Kills */
+        min-width: 70px; 
         text-align: center;
     }
 
     .responsive-table th:nth-child(7),
     .responsive-table td:nth-child(7) {
-        min-width: 90px; /* Headshots */
+        min-width: 90px; 
         text-align: center;
     }
 
     .responsive-table th:nth-child(8),
     .responsive-table td:nth-child(8) {
-        min-width: 80px; /* Daño */
+        min-width: 80px; 
         text-align: center;
     }
 
     .responsive-table th:nth-child(9),
     .responsive-table td:nth-child(9) {
-        min-width: 80px; /* Revives */
+        min-width: 80px; 
         text-align: center;
     }
 
     .responsive-table th:nth-child(10),
     .responsive-table td:nth-child(10) {
-        min-width: 90px; /* Team kills */
+        min-width: 90px;
         text-align: center;
     }
 
     .responsive-table th:nth-child(11),
     .responsive-table td:nth-child(11) {
-        min-width: 120px; /* Tiempo de juego */
+        min-width: 120px; 
         text-align: center;
     }
 
     .responsive-table th:nth-child(12),
     .responsive-table td:nth-child(12) {
-        min-width: 110px; /* Posición promedio */
+        min-width: 110px;
         text-align: center;
     }
 
     .responsive-table th:nth-child(13),
     .responsive-table td:nth-child(13) {
-        min-width: 90px; /* Puntos */
+        min-width: 90px; 
         text-align: center;
         font-weight: 700;
         color: var(--primary-blue);
     }
 
-/* Indicador de scroll horizontal para móviles */
 .scroll-indicator {
     display: none;
     position: absolute;
@@ -200,10 +192,9 @@
     }
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
     .table-container {
-        margin: 1rem -15px 0; /* Extend to screen edges on mobile */
+        margin: 1rem -15px 0; 
         border-radius: 0;
     }
 
@@ -212,7 +203,7 @@
     }
 
     .responsive-table {
-        min-width: 1000px; /* Slightly smaller on mobile but still showing all data */
+        min-width: 1000px; 
         font-size: 0.875rem;
     }
 
@@ -237,7 +228,6 @@
         }
 }
 
-/* Mejora para el primer y último elemento visible */
 .responsive-table tbody td:first-child {
     font-weight: 800;
     font-size: 1.1rem;

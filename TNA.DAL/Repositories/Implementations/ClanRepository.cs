@@ -30,7 +30,6 @@ namespace TNA.DAL.Repositories.Implementations
             if (clan is null) throw new ArgumentNullException(nameof(clan));
             if (string.IsNullOrWhiteSpace(clan.ClanId)) return false;
 
-            // Obtener la entidad rastreada desde la BD para evitar problemas con estados
             var existing = await _dbContext.Clans
                 .FirstOrDefaultAsync(c => c.ClanId == clan.ClanId, cancellationToken)
                 .ConfigureAwait(false);
@@ -38,7 +37,6 @@ namespace TNA.DAL.Repositories.Implementations
             if (existing is null)
                 return false;
 
-            // Actualizar solo las propiedades permitidas (evita reemplazar Id)
             existing.ClanName = clan.ClanName;
             existing.ClanTag = clan.ClanTag;
             existing.ClanLevel = clan.ClanLevel;
@@ -53,12 +51,10 @@ namespace TNA.DAL.Repositories.Implementations
             }
             catch (DbUpdateConcurrencyException)
             {
-                // manejar según política (reintento/log), aquí devolvemos false
                 return false;
             }
-            catch (DbUpdateException)
-            {
-                // manejar errores de BD
+            catch (DbUpdateException) 
+            { 
                 return false;
             }
         }

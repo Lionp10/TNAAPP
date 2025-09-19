@@ -1,5 +1,4 @@
-﻿/* Profile Page Specific Styles */
-.social-media-section {
+﻿.social-media-section {
     margin-top: 1rem;
 }
 
@@ -30,7 +29,6 @@
     margin-top: 1rem;
 }
 
-/* Updated auth-select styles to match Bootstrap form-select styling */
 .auth-select {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(0, 166, 230, 0.3);
@@ -132,7 +130,6 @@
     border: 1px solid rgba(220, 53, 69, 0.3);
 }
 
-/* Enhanced layout styles for single card with two columns */
 .auth-card.h-100 {
     height: 100% !important;
     display: flex;
@@ -149,7 +146,6 @@
     margin-top: auto;
 }
 
-/* Enhanced button styling for better visual hierarchy */
 .auth-button.btn-sm {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
@@ -169,7 +165,6 @@
         transform: translateY(-1px);
     }
 
-/* Improved responsive layout for single card structure */
 @media (max-width: 1199.98px) {
     .row.justify-content-center {
         max-width: 1000px;
@@ -192,7 +187,6 @@
         height: 45px;
     }
 
-    /* Stack columns vertically on mobile */
     .auth-card .row.gx-4 {
         flex-direction: column;
     }
@@ -212,7 +206,6 @@
         padding: 0;
     }
 
-    /* Better mobile spacing for social media section */
     .social-row-content {
         gap: 0.5rem;
     }
@@ -222,7 +215,6 @@
         font-size: 0.9rem;
     }
 
-    /* Improved mobile spacing for single card layout */
     .auth-card-header h2 {
         font-size: 1.5rem;
     }
@@ -232,7 +224,6 @@
     }
 }
 
-/* Auth classes specifically for profile page - updated for single card layout */
 .auth-container {
     width: 100%;
     max-width: 1200px;
@@ -294,7 +285,6 @@
     margin: 0;
 }
 
-/* Enhanced form styling for two-column layout */
 .auth-card .row.gx-4 > .col-lg-6 h5 {
     color: #00a6e6;
     font-weight: 700;
@@ -398,7 +388,6 @@
         color: #ffffff;
     }
 
-/* Enhanced footer styling */
 .auth-card-footer {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding-top: 1.5rem;

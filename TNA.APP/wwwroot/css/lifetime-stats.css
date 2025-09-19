@@ -1,5 +1,4 @@
-﻿/* Enhanced styling for lifetime statistics modal */
-.glass-card {
+﻿.glass-card {
     background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -35,7 +34,6 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
-/* Modal enhancements */
 .modal-content {
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
@@ -49,25 +47,21 @@
     background: rgba(255, 255, 255, 0.02);
 }
 
-/* Loading spinner styling */
 #lifetimeSpinner {
     background: rgba(255, 255, 255, 0.02);
     border-radius: 12px;
 }
 
-/* Badge styling */
 .badge {
     font-size: 0.75rem;
     padding: 0.5rem 0.75rem;
     border-radius: 6px;
 }
 
-/* Icon styling */
 .bi {
     font-size: 1.1em;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
     .modal-dialog {
         margin: 0.5rem;

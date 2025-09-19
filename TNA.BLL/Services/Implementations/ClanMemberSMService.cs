@@ -38,7 +38,6 @@ namespace TNA.BLL.Services.Implementations
 
         public async Task SyncForMemberAsync(int memberId, List<ClanMemberSocialMediaDTO> socialMedias, CancellationToken cancellationToken = default)
         {
-            // Normalizar y filtrar
             socialMedias ??= new List<ClanMemberSocialMediaDTO>();
 
             var normalized = socialMedias
@@ -60,10 +59,8 @@ namespace TNA.BLL.Services.Implementations
             if (normalized.Count > MaxItems)
                 normalized = normalized.Take(MaxItems).ToList();
 
-            // Obtener existentes
             var existing = await _repo.GetByMemberIdAsync(memberId, cancellationToken).ConfigureAwait(false);
 
-            // Eliminar los que no están en normalized (comparando por SocialMediaId)
             var toDelete = existing
                 .Where(e => !normalized.Any(n => string.Equals(n.SocialMediaId, e.SocialMediaId, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
@@ -73,7 +70,6 @@ namespace TNA.BLL.Services.Implementations
                 await _repo.DeleteAsync(del.Id, cancellationToken).ConfigureAwait(false);
             }
 
-            // Actualizar/crear
             foreach (var item in normalized)
             {
                 var ex = existing.FirstOrDefault(e => string.Equals(e.SocialMediaId, item.SocialMediaId, StringComparison.OrdinalIgnoreCase));

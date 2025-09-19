@@ -5,6 +5,45 @@
     Layout = "~/Views/Shared/_DashboardLayout.cshtml";
 }
 
+<style>
+    .btn-group.w-100 {
+        display: flex;
+        gap: 0;
+    }
+    .btn-group.w-100 .btn {
+        flex: 1 1 0;
+        border-radius: 0.375rem;
+    }
+    .btn-group.w-100 .btn:first-child {
+        border-top-left-radius: 0.375rem;
+        border-bottom-left-radius: 0.375rem;
+    }
+    .btn-group.w-100 .btn:last-child {
+        border-top-right-radius: 0.375rem;
+        border-bottom-right-radius: 0.375rem;
+    }
+
+    .btn-check:checked + .btn.btn-outline-success,
+    .btn-check:checked + .btn.btn-outline-danger {
+        color: #fff !important;
+        background-image: none;
+    }
+    .btn-check:checked + .btn.btn-outline-success {
+        background-color: #198754;
+        border-color: #198754;
+    }
+    .btn-check:checked + .btn.btn-outline-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    .btn.btn-outline-success, .btn.btn-outline-danger {
+        box-shadow: none;
+    }
+
+    .form-label + .btn-group.w-100 { margin-top: .35rem; }
+</style>
+
 <section class="container mt-4">
     <div class="card bg-dark border-0 mb-4">
         <div class="card-body">
@@ -37,22 +76,39 @@
 
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label asp-for="RoleId" class="form-label">RoleId</label>
-                        <input asp-for="RoleId" type="number" class="form-control" />
+                        <label asp-for="RoleId" class="form-label text-light">Rol</label>
+                        <select asp-for="RoleId" asp-items="ViewBag.Roles" class="form-select">
+                            <option value="">-- Seleccionar rol --</option>
+                        </select>
                         <span asp-validation-for="RoleId" class="text-danger"></span>
                     </div>
 
                     <div class="col-md-4">
-                        <label asp-for="MemberId" class="form-label text-light">MemberId (opcional)</label>
-                        <input asp-for="MemberId" type="number" class="form-control" />
+                        <label asp-for="MemberId" class="form-label text-light">Es miembro? (opcional)</label>
+                        <select asp-for="MemberId" class="form-select" asp-items="ViewBag.Members">
+                            <option value="">-- Ninguno --</option>
+                        </select>
                         <span asp-validation-for="MemberId" class="text-danger"></span>
                     </div>
 
-                    <div class="col-md-4 d-flex align-items-center">
-                        <div class="form-check mt-3">
-                            <input asp-for="Enabled" class="form-check-input" />
-                            <label asp-for="Enabled" class="form-check-label text-light">Habilitado</label>
+                    <div class="col-md-4">
+                        <label class="form-label text-light">Habilitado</label>
+
+                        <div class="btn-group w-100" role="group" aria-label="Habilitado">
+                            @{
+                                var enabledValue = Model?.Enabled ?? true;
+                                var yesChecked = enabledValue ? "checked" : null;
+                                var noChecked = !enabledValue ? "checked" : null;
+                            }
+
+                            <input type="radio" class="btn-check" name="Enabled" id="enabledYes" value="true" autocomplete="off" @(yesChecked) />
+                            <label class="btn btn-outline-success" for="enabledYes">Si</label>
+
+                            <input type="radio" class="btn-check" name="Enabled" id="enabledNo" value="false" autocomplete="off" @(noChecked) />
+                            <label class="btn btn-outline-danger" for="enabledNo">No</label>
                         </div>
+
+                        <span asp-validation-for="Enabled" class="text-danger"></span>
                     </div>
                 </div>
 

@@ -1,0 +1,58 @@
+﻿@{
+    var success = TempData["SuccessMessage"] as string ?? TempData["Message"] as string;
+    var error = TempData["ErrorMessage"] as string ?? TempData["Error"] as string;
+    var has = !string.IsNullOrEmpty(success) || !string.IsNullOrEmpty(error);
+    var isSuccess = !string.IsNullOrEmpty(success);
+    var msg = isSuccess ? success : error;
+}
+
+@if (has)
+{
+    <div class="modal fade temp-msg-modal" id="globalTempMessageModal" tabindex="-1" aria-hidden="true" aria-labelledby="globalTempMessageModalLabel">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content glass-modal">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center">
+                        <div class="temp-msg-icon @(isSuccess ? "temp-msg-success" : "temp-msg-error")">
+                            @if (isSuccess)
+                            {
+                                <i class="bi bi-check-lg"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                            }
+                        </div>
+                        <h5 class="modal-title" id="globalTempMessageModalLabel">
+                            @(isSuccess ? "Operación correcta" : "Error")
+                        </h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p class="mb-0">@msg</p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-accent" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var el = document.getElementById('globalTempMessageModal');
+            if (!el) return;
+            try {
+                var m = new bootstrap.Modal(el);
+                m.show();
+                setTimeout(function () {
+                    try { m.hide(); } catch (e) {  }
+                }, 5000);
+            } catch (e) {
+            }
+        });
+    </script>
+}

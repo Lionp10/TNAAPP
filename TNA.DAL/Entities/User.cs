@@ -16,5 +16,6 @@ namespace TNA.DAL.Entities
         public bool Enabled { get; set; } 
 
         public ClanMember? Member { get; set; }
+        public Role? Role { get; set; }
     }
 }

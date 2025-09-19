@@ -19,11 +19,8 @@
 </head>
 
 <body>
-    <!-- Added sidebar structure and mobile overlay -->
-    <!-- Mobile overlay -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <!-- Sidebar -->
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-brand">
@@ -46,7 +43,7 @@
                     </a>
                 </li>
                 <li class="sidebar-nav-item">
-                    <a href="/miembros" class="sidebar-nav-link">
+                    <a href="@Url.Action("Index", "ClanMember")" class="sidebar-nav-link">
                         <i class="bi bi-person-badge-fill"></i>
                         <span class="sidebar-nav-text">Miembros</span>
                     </a>
@@ -60,7 +57,6 @@
             </ul>
 
             <div class="sidebar-footer">
-                @* Volver al sitio: link que redirige a Home/Index (estilo como las opciones normales) *@
                 <div class="mb-2">
                     <a href="@Url.Action("Index","Home")" class="sidebar-nav-link">
                         <i class="bi bi-arrow-left-circle me-2"></i>
@@ -68,7 +64,6 @@
                     </a>
                 </div>
 
-                @* Logout seguro: POST con antiforgery token *@
                 <form asp-controller="Auth" asp-action="Logout" method="post" class="m-0 p-0">
                     @Html.AntiForgeryToken()
                     <button type="submit" class="sidebar-nav-link btn btn-link text-start w-100 logout-link" style="text-decoration:none;">
@@ -80,18 +75,15 @@
         </div>
     </nav>
 
-    <!-- Mobile toggle button -->
     <button class="mobile-sidebar-toggle" id="mobileSidebarToggle">
         <i class="bi bi-list"></i>
     </button>
 
-    <!-- Main content wrapper -->
     <div class="main-wrapper" id="mainWrapper">
         <main class="content-wrapper">
             @RenderBody()
         </main>
 
-        <!-- Updated footer to span full width -->
         <footer class="site-footer">
             <div class="container-fluid">
                 <div class="small text-muted-tna">© @DateTime.Now.Year TNA ESPORT — Todos los derechos reservados</div>
@@ -102,6 +94,8 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <script src="~/js/sidebar.js"></script>
+
+    @await Html.PartialAsync("_TempMessageModal")
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

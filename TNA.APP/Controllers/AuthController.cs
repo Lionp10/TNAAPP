@@ -19,14 +19,14 @@ namespace TNA.APP.Controllers
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly ILogger<AuthController> _logger;
         private readonly IDataProtector _protector;
-        private readonly IEmailService _emailService; // <-- nueva dependencia
+        private readonly IEmailService _emailService; 
 
         public AuthController(
             IUserService userService,
             IPasswordHasher<User> passwordHasher,
             ILogger<AuthController> logger,
             IDataProtectionProvider dataProtectionProvider,
-            IEmailService emailService) // <-- inyectado
+            IEmailService emailService) 
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
@@ -36,7 +36,6 @@ namespace TNA.APP.Controllers
             _protector = dataProtectionProvider.CreateProtector("TNA.APP.PasswordReset");
         }
 
-        // GET: /Auth/Index
         [HttpGet]
         public IActionResult Index(string returnUrl = null)
         {
@@ -44,7 +43,6 @@ namespace TNA.APP.Controllers
             return View(vm);
         }
 
-        // POST: /Auth/Index (login)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Index(LoginViewModel model)
@@ -119,24 +117,20 @@ namespace TNA.APP.Controllers
             }
         }
 
-        // POST: /Auth/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            // redirige a Auth/Index tal como solicitaste
             return RedirectToAction("Index", "Auth");
         }
 
-        // GET: /Auth/Register  (esqueleto; puedes ampliarlo)
         [HttpGet]
         public IActionResult Register()
         {
             return View();
         }
 
-        // POST: /Auth/Register
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model, CancellationToken cancellationToken = default)
@@ -148,14 +142,12 @@ namespace TNA.APP.Controllers
                 var email = model.Email?.Trim().ToLowerInvariant() ?? string.Empty;
                 var username = model.Username?.Trim() ?? string.Empty;
 
-                // Validar que el email no exista
                 if (await _userService.EmailExistsAsync(email, cancellationToken).ConfigureAwait(false))
                 {
                     ModelState.AddModelError(nameof(model.Email), "Este email ya está registrado.");
                     return View(model);
                 }
 
-                // Opcional: validar que el nickname no exista
                 if (await _userService.NicknameExistsAsync(username, cancellationToken).ConfigureAwait(false))
                 {
                     ModelState.AddModelError(nameof(model.Username), "El nombre de usuario ya está en uso.");
@@ -174,7 +166,6 @@ namespace TNA.APP.Controllers
 
                 var newUserId = await _userService.CreateAsync(dto, cancellationToken).ConfigureAwait(false);
 
-                // Auto-login del usuario creado
                 var created = await _userService.GetByIdAsync(newUserId, cancellationToken).ConfigureAwait(false);
                 if (created != null)
                 {
@@ -199,7 +190,6 @@ namespace TNA.APP.Controllers
                     _logger.LogInformation("Nuevo usuario creado y autenticado: {Email}", created.Email);
                 }
 
-                // Redirect seguro
                 if (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
                     return LocalRedirect(model.ReturnUrl);
 
@@ -207,7 +197,6 @@ namespace TNA.APP.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // Errores de validación de negocio (email/nickname duplicados)
                 ModelState.AddModelError(string.Empty, ex.Message);
                 _logger.LogWarning(ex, "Error creando usuario desde Register");
                 return View(model);
@@ -220,14 +209,12 @@ namespace TNA.APP.Controllers
             }
         }
 
-        // GET: /Auth/ForgotPassword (esqueleto)
         [HttpGet]
         public IActionResult ForgotPassword()
         {
             return View();
         }
 
-        // POST: /Auth/ForgotPassword
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model, CancellationToken cancellationToken = default)
@@ -238,28 +225,23 @@ namespace TNA.APP.Controllers
             {
                 var email = model.Email?.Trim().ToLowerInvariant() ?? string.Empty;
 
-                // No revelar si el email existe o no: mostrar siempre el mismo mensaje.
                 var userDto = await _userService.GetByEmailAsync(email, cancellationToken).ConfigureAwait(false);
 
                 const string userMessage = "Si existe una cuenta asociada a ese email, recibirás instrucciones para restablecer la contraseña.";
 
                 if (userDto == null)
                 {
-                    // Simular comportamiento idéntico al caso exitoso para evitar enumeración de cuentas
                     ViewBag.Message = userMessage;
                     return View();
                 }
 
-                // Generar token protegido que incluye id y expiración (ej. 1 hora)
                 var expiry = DateTimeOffset.UtcNow.AddHours(1);
                 var payload = $"{userDto.Id}|{expiry.ToUnixTimeSeconds()}|{Guid.NewGuid()}";
                 var protectedToken = _protector.Protect(payload);
                 var tokenEncoded = WebUtility.UrlEncode(protectedToken);
 
-                // Construir la URL de restablecimiento (necesitarás implementar ResetPassword)
                 var resetUrl = Url.Action("ResetPassword", "Auth", new { token = tokenEncoded, email = email }, Request.Scheme);
 
-                // Intentar enviar email si existe un servicio compatible registrado.
                 if (_emailService != null)
                 {
                     var html = $"<p>Hola,</p><p>Para restablecer tu contraseña haz clic en el siguiente enlace:</p><p><a href=\"{resetUrl}\">Restablecer contraseña</a></p><p>Si no solicitaste este cambio, ignora este correo.</p>";
@@ -271,7 +253,6 @@ namespace TNA.APP.Controllers
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Error enviando email de restablecimiento a {Email}", email);
-                        // no devolver error al usuario: mostramos el mismo mensaje por seguridad
                     }
                 }
                 else
@@ -290,7 +271,6 @@ namespace TNA.APP.Controllers
             }
         }
 
-        // GET: /Auth/ResetPassword
         [HttpGet]
         public async Task<IActionResult> ResetPassword(string? token, string? email)
         {
@@ -324,7 +304,6 @@ namespace TNA.APP.Controllers
                     return View(new ResetPasswordViewModel { Email = email, Token = token });
                 }
 
-                // Verificar que el usuario exista y el email coincida (mejora de seguridad)
                 var userDto = await _userService.GetByIdAsync(userId).ConfigureAwait(false);
                 if (userDto == null || !string.Equals(userDto.Email, email, StringComparison.OrdinalIgnoreCase))
                 {
@@ -348,7 +327,6 @@ namespace TNA.APP.Controllers
             }
         }
 
-        // POST: /Auth/ResetPassword
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model, CancellationToken cancellationToken = default)
@@ -357,7 +335,6 @@ namespace TNA.APP.Controllers
 
             try
             {
-                // Validar token
                 var decoded = WebUtility.UrlDecode(model.Token);
                 var payload = _protector.Unprotect(decoded);
                 var parts = payload.Split('|');
@@ -380,7 +357,6 @@ namespace TNA.APP.Controllers
                     return View(model);
                 }
 
-                // Obtener usuario desde repositorio para actualizar hash
                 var repo = HttpContext.RequestServices.GetService(typeof(TNA.DAL.Repositories.Interfaces.IUserRepository)) as TNA.DAL.Repositories.Interfaces.IUserRepository;
                 if (repo == null)
                 {
@@ -396,13 +372,11 @@ namespace TNA.APP.Controllers
                     return View(model);
                 }
 
-                // Hashear y actualizar contraseña
                 userEntity.PasswordHash = _passwordHasher.HashPassword(userEntity, model.Password);
                 await repo.UpdateAsync(userEntity, cancellationToken).ConfigureAwait(false);
 
                 _logger.LogInformation("Contraseña restablecida para UserId {UserId}", userId);
 
-                // Indicar éxito y redirigir a login (Index del Auth)
                 TempData["Message"] = "Contraseña restablecida correctamente. Ahora puedes iniciar sesión.";
                 return RedirectToAction("Index", "Auth");
             }

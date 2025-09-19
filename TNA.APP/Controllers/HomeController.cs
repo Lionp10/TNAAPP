@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Globalization;
 using System.Security.Claims;
+using System.IO;
 using TNA.APP.Models;
 using TNA.BLL.DTOs;
 using TNA.BLL.Services.Interfaces;
@@ -20,11 +21,12 @@ namespace TNA.APP.Controllers
         private readonly IPubgService _pubgService;
         private readonly IPlayerMatchService _playerMatchService;
         private readonly IUserService _userService;
+        private readonly IS3Service _s3Service;
 
         public HomeController(ILogger<HomeController> logger, IClanService clanService,
             IClanMemberService clanMemberService, IClanMemberSMService clanMemberSMService,
             IPubgService pubgService, IPlayerMatchService playerMatchService,
-            IUserService userService)
+            IUserService userService, IS3Service s3Service)
         {
             _logger = logger;
             _clanService = clanService;
@@ -33,14 +35,13 @@ namespace TNA.APP.Controllers
             _pubgService = pubgService;
             _playerMatchService = playerMatchService;
             _userService = userService;
+            _s3Service = s3Service;
         }
 
-        // GET: /Home/Index?range=day|week|month|all
         public async Task<IActionResult> Index(string range = "day")
         {
             var clan = await _pubgService.GetOrUpdateClanAsync();
 
-            // Calcular rango en zona GMT-3
             DateTimeOffset? startUtc = null;
             DateTimeOffset? endUtc = null;
             var tzOffset = TimeSpan.FromHours(-3);
@@ -60,7 +61,6 @@ namespace TNA.APP.Controllers
                     break;
 
                 case "week":
-                    // semana calendario anterior (Lun-Dom) en GMT-3
                     var dow = nowTz.DayOfWeek;
                     int daysSinceMonday = dow == DayOfWeek.Sunday ? 6 : ((int)dow - 1);
                     var startOfCurrentWeek = nowTz.Date.AddDays(-daysSinceMonday);
@@ -104,7 +104,6 @@ namespace TNA.APP.Controllers
             return View(vm);
         }
 
-        // wrapper to call service method with cancellation token optional (keeps original call)
         private async Task<List<TNA.BLL.DTOs.PlayerRankingDTO>> _playerMatch_service_wrapper(DateTimeOffset? s, DateTimeOffset? e)
         {
             return await _playerMatchService.GetRankingAsync(s, e);
@@ -139,7 +138,6 @@ namespace TNA.APP.Controllers
             return View();
         }
 
-        // GET: Profile (muestra formulario con datos del usuario logueado y, si aplica, datos de miembro)
         public async Task<IActionResult> Profile(CancellationToken cancellationToken = default)
         {
             if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
@@ -153,11 +151,9 @@ namespace TNA.APP.Controllers
                 Id = user.Id,
                 Nickname = user.Nickname,
                 Email = user.Email,
-                // Asignar MemberId SOLO si el usuario tiene role 3 y MemberId no es null
                 MemberId = (user.RoleId == 3 && user.MemberId.HasValue) ? user.MemberId : null
             };
 
-            // Solo cargar datos de ClanMember y sus redes si el usuario tiene RoleId == 3 y MemberId presente.
             if (user.RoleId == 3 && user.MemberId.HasValue)
             {
                 var db = HttpContext.RequestServices.GetService(typeof(TNADbContext)) as TNADbContext;
@@ -170,7 +166,6 @@ namespace TNA.APP.Controllers
 
                     if (member != null)
                     {
-                        // mapear DTO -> ViewModel
                         vm.Member = new ClanMemberViewModel
                         {
                             Id = member.Id,
@@ -207,255 +202,319 @@ namespace TNA.APP.Controllers
             return View(vm);
         }
 
-        // POST: Profile (actualiza usuario y, si corresponde, datos de miembro)
-            [HttpPost]
-            [ValidateAntiForgeryToken]
-            public async Task<IActionResult> Profile(ProfileViewModel model, CancellationToken cancellationToken = default)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Profile(ProfileViewModel model, IFormFile? ProfileImageFile, CancellationToken cancellationToken = default)
+        {
+            if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
+                return Challenge();
+
+            model.Id = userId;
+
+            int claimRoleId = 0;
+            int.TryParse(User.FindFirst("roleid")?.Value, out claimRoleId);
+
+            if (ProfileImageFile != null && ProfileImageFile.Length > 0)
             {
-                if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId))
-                    return Challenge();
-
-                model.Id = userId;
-
-                int claimRoleId = 0;
-                int.TryParse(User.FindFirst("roleid")?.Value, out claimRoleId);
-
-                if (!ModelState.IsValid)
+                var ext = Path.GetExtension(ProfileImageFile.FileName) ?? string.Empty;
+                if (!ext.Equals(".webp", StringComparison.OrdinalIgnoreCase)
+                    && !ProfileImageFile.ContentType.Equals("image/webp", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (claimRoleId == 3 && model.MemberId.HasValue && (model.MemberSocialMedias == null || !model.MemberSocialMedias.Any()))
-                    {
-                        try
-                        {
-                            var socials = await _clanMemberSMService.GetByMemberIdAsync(model.MemberId.Value, cancellationToken).ConfigureAwait(false);
-                            model.MemberSocialMedias = socials?.Select(s => new ClanMemberSMViewModel
-                            {
-                                Id = s.Id,
-                                MemberId = s.MemberId,
-                                SocialMediaId = s.SocialMediaId,
-                                SocialMediaUrl = s.SocialMediaUrl,
-                                Enabled = s.Enabled
-                            }).ToList();
-                        }
-                        catch { model.MemberSocialMedias = new List<ClanMemberSMViewModel>(); }
-                    }
+                    ModelState.AddModelError("ProfileImageFile", "Solo se permiten imágenes en formato .webp.");
+                }
+            }
 
-                    return View(model);
+            if (!ModelState.IsValid)
+            {
+                if (claimRoleId == 3 && model.MemberId.HasValue && (model.MemberSocialMedias == null || !model.MemberSocialMedias.Any()))
+                {
+                    try
+                    {
+                        var socials = await _clanMemberSMService.GetByMemberIdAsync(model.MemberId.Value, cancellationToken).ConfigureAwait(false);
+                        model.MemberSocialMedias = socials?.Select(s => new ClanMemberSMViewModel
+                        {
+                            Id = s.Id,
+                            MemberId = s.MemberId,
+                            SocialMediaId = s.SocialMediaId,
+                            SocialMediaUrl = s.SocialMediaUrl,
+                            Enabled = s.Enabled
+                        }).ToList();
+                    }
+                    catch { model.MemberSocialMedias = new List<ClanMemberSMViewModel>(); }
                 }
 
-                try
-                {
-                    var existingUser = await _userService.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
-                    if (existingUser is null) return NotFound();
+                return View(model);
+            }
 
-                    // VALIDACIÓN: nickname único (excluir el nickname actual del usuario)
-                    var newNickname = model.Nickname?.Trim() ?? string.Empty;
-                    if (!string.Equals(existingUser.Nickname, newNickname, StringComparison.OrdinalIgnoreCase))
+            try
+            {
+                var existingUser = await _userService.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+                if (existingUser is null) return NotFound();
+
+                var newNickname = model.Nickname?.Trim() ?? string.Empty;
+                if (!string.Equals(existingUser.Nickname, newNickname, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (await _userService.NicknameExistsAsync(newNickname, cancellationToken).ConfigureAwait(false))
                     {
-                        if (await _userService.NicknameExistsAsync(newNickname, cancellationToken).ConfigureAwait(false))
+                        ModelState.AddModelError(nameof(ProfileViewModel.Nickname), "El nickname ya está en uso.");
+                        if (claimRoleId == 3 && model.MemberId.HasValue && (model.MemberSocialMedias == null || !model.MemberSocialMedias.Any()))
                         {
-                            ModelState.AddModelError(nameof(ProfileViewModel.Nickname), "El nickname ya está en uso.");
-                            if (claimRoleId == 3 && model.MemberId.HasValue && (model.MemberSocialMedias == null || !model.MemberSocialMedias.Any()))
+                            try
                             {
+                                var socials = await _clanMemberSMService.GetByMemberIdAsync(model.MemberId.Value, cancellationToken).ConfigureAwait(false);
+                                model.MemberSocialMedias = socials?.Select(s => new ClanMemberSMViewModel
+                                {
+                                    Id = s.Id,
+                                    MemberId = s.MemberId,
+                                    SocialMediaId = s.SocialMediaId,
+                                    SocialMediaUrl = s.SocialMediaUrl,
+                                    Enabled = s.Enabled
+                                }).ToList();
+                            }
+                            catch { model.MemberSocialMedias = new List<ClanMemberSMViewModel>(); }
+                        }
+                        return View(model);
+                    }
+                }
+
+                var userNeedsUpdate = false;
+                var userUpdate = new UserUpdateDTO
+                {
+                    Id = existingUser.Id,
+                    Nickname = existingUser.Nickname,
+                    Email = existingUser.Email, 
+                    Password = null,
+                    RoleId = existingUser.RoleId,
+                    MemberId = existingUser.MemberId,
+                    Enabled = existingUser.Enabled
+                };
+
+                if (!string.Equals(existingUser.Nickname, newNickname, StringComparison.OrdinalIgnoreCase))
+                {
+                    userUpdate.Nickname = newNickname;
+                    userNeedsUpdate = true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.Password))
+                {
+                    userUpdate.Password = model.Password;
+                    userNeedsUpdate = true;
+                }
+
+                if (userNeedsUpdate)
+                {
+                    await _userService.UpdateAsync(userUpdate, cancellationToken).ConfigureAwait(false);
+                    _logger.LogInformation("Usuario {UserId} actualizado (usuario) por el propio usuario.", userId);
+                }
+
+                if (existingUser.MemberId.HasValue
+                    && existingUser.RoleId == 3
+                    && model.Member != null
+                    && model.Member.Id == existingUser.MemberId.Value)
+                {
+                    var db = HttpContext.RequestServices.GetService(typeof(TNADbContext)) as TNADbContext;
+                    if (db != null)
+                    {
+                        var existingMember = await db.ClanMembers.FirstOrDefaultAsync(m => m.Id == model.Member.Id, cancellationToken).ConfigureAwait(false);
+                        if (existingMember != null)
+                        {
+                            var memberChanged = false;
+
+                            var previousImageKey = existingMember.ProfileImage;
+
+                            bool uploadedNewFile = false;
+                            if (ProfileImageFile != null && ProfileImageFile.Length > 0)
+                            {
+                                _logger.LogDebug("Profile POST: se recibió archivo. Name={Name} Length={Length} ContentType={CT}", ProfileImageFile.FileName, ProfileImageFile.Length, ProfileImageFile.ContentType);
+
                                 try
                                 {
-                                    var socials = await _clanMemberSMService.GetByMemberIdAsync(model.MemberId.Value, cancellationToken).ConfigureAwait(false);
-                                    model.MemberSocialMedias = socials?.Select(s => new ClanMemberSMViewModel
+                                    if (_s3Service == null)
                                     {
-                                        Id = s.Id,
-                                        MemberId = s.MemberId,
-                                        SocialMediaId = s.SocialMediaId,
-                                        SocialMediaUrl = s.SocialMediaUrl,
-                                        Enabled = s.Enabled
-                                    }).ToList();
+                                        _logger.LogError("IS3Service no está inyectado en HomeController.");
+                                        ModelState.AddModelError(string.Empty, "Servicio de almacenamiento no disponible.");
+                                        var socials = await _clanMemberSMService.GetByMemberIdAsync(model.Member.Id, cancellationToken).ConfigureAwait(false);
+                                        model.MemberSocialMedias = socials?.Select(s => new ClanMemberSMViewModel { Id = s.Id, MemberId = s.MemberId, SocialMediaId = s.SocialMediaId, SocialMediaUrl = s.SocialMediaUrl, Enabled = s.Enabled }).ToList();
+                                        return View(model);
+                                    }
+
+                                    var newKey = await _s3Service.UploadFileAsync(ProfileImageFile, cancellationToken).ConfigureAwait(false);
+                                    if (string.IsNullOrWhiteSpace(newKey))
+                                    {
+                                        _logger.LogWarning("S3Service.UploadFileAsync devolvió key vacía para user {UserId}.", userId);
+                                        ModelState.AddModelError(string.Empty, "No se pudo subir la imagen. Intenta de nuevo.");
+                                        var socials = await _clanMemberSMService.GetByMemberIdAsync(model.Member.Id, cancellationToken).ConfigureAwait(false);
+                                        model.MemberSocialMedias = socials?.Select(s => new ClanMemberSMViewModel { Id = s.Id, MemberId = s.MemberId, SocialMediaId = s.SocialMediaId, SocialMediaUrl = s.SocialMediaUrl, Enabled = s.Enabled }).ToList();
+                                        return View(model);
+                                    }
+
+                                    _logger.LogInformation("S3: archivo subido correctamente. Key={Key} UserId={UserId}", newKey, userId);
+                                    existingMember.ProfileImage = newKey;
+                                    memberChanged = true;
+                                    uploadedNewFile = true;
                                 }
-                                catch { model.MemberSocialMedias = new List<ClanMemberSMViewModel>(); }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(ex, "Error subiendo imagen a S3 para UserId {UserId}", userId);
+                                    ModelState.AddModelError(string.Empty, "Error subiendo la imagen. Intenta de nuevo más tarde.");
+                                    var socials = await _clanMemberSMService.GetByMemberIdAsync(model.Member.Id, cancellationToken).ConfigureAwait(false);
+                                    model.MemberSocialMedias = socials?.Select(s => new ClanMemberSMViewModel { Id = s.Id, MemberId = s.MemberId, SocialMediaId = s.SocialMediaId, SocialMediaUrl = s.SocialMediaUrl, Enabled = s.Enabled }).ToList();
+                                    return View(model);
+                                }
                             }
-                            return View(model);
-                        }
-                    }
-
-                    // --- USUARIO: actualizar sólo si cambió nickname o se envió contraseña ---
-                    var userNeedsUpdate = false;
-                    var userUpdate = new UserUpdateDTO
-                    {
-                        Id = existingUser.Id,
-                        Nickname = existingUser.Nickname,
-                        Email = existingUser.Email, // protegemos email en servidor
-                        Password = null,
-                        RoleId = existingUser.RoleId,
-                        MemberId = existingUser.MemberId,
-                        Enabled = existingUser.Enabled
-                    };
-
-                    if (!string.Equals(existingUser.Nickname, newNickname, StringComparison.OrdinalIgnoreCase))
-                    {
-                        userUpdate.Nickname = newNickname;
-                        userNeedsUpdate = true;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(model.Password))
-                    {
-                        userUpdate.Password = model.Password;
-                        userNeedsUpdate = true;
-                    }
-
-                    if (userNeedsUpdate)
-                    {
-                        await _userService.UpdateAsync(userUpdate, cancellationToken).ConfigureAwait(false);
-                        _logger.LogInformation("Usuario {UserId} actualizado (usuario) por el propio usuario.", userId);
-                    }
-
-                    // --- CLAN MEMBER: sólo si existe relación y role permite editar (role 3) ---
-                    if (existingUser.MemberId.HasValue
-                        && existingUser.RoleId == 3
-                        && model.Member != null
-                        && model.Member.Id == existingUser.MemberId.Value)
-                    {
-                        var db = HttpContext.RequestServices.GetService(typeof(TNADbContext)) as TNADbContext;
-                        if (db != null)
-                        {
-                            var existingMember = await db.ClanMembers.FirstOrDefaultAsync(m => m.Id == model.Member.Id, cancellationToken).ConfigureAwait(false);
-                            if (existingMember != null)
+                            else
                             {
-                                var memberChanged = false;
-
-                                // Comparar y asignar solo cambios no nulos/expresamente enviados.
-                                if (!string.Equals(existingMember.FirstName ?? string.Empty, model.Member.FirstName ?? string.Empty, StringComparison.Ordinal))
-                                {
-                                    existingMember.FirstName = model.Member.FirstName;
-                                    memberChanged = true;
-                                }
-
-                                if (!string.Equals(existingMember.LastName ?? string.Empty, model.Member.LastName ?? string.Empty, StringComparison.Ordinal))
-                                {
-                                    existingMember.LastName = model.Member.LastName;
-                                    memberChanged = true;
-                                }
-
-                                // ProfileImage: actualizar sólo si el formulario envió explícitamente un valor (no null).
-                                // Así evitamos sobrescribir con null cuando el campo no fue enviado.
                                 if (model.Member.ProfileImage != null
                                     && !string.Equals(existingMember.ProfileImage ?? string.Empty, model.Member.ProfileImage ?? string.Empty, StringComparison.Ordinal))
                                 {
                                     existingMember.ProfileImage = model.Member.ProfileImage;
                                     memberChanged = true;
                                 }
-
-                                if (memberChanged)
-                                {
-                                    db.ClanMembers.Update(existingMember);
-                                    await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-                                    _logger.LogInformation("ClanMember {MemberId} actualizado por usuario {UserId}.", existingMember.Id, userId);
-                                }
                             }
-                        }
 
-                        // --- REDES SOCIALES: solo sincronizar si el formulario envió la lista y hay diferencias reales ---
-                        if (model.MemberSocialMedias != null)
-                        {
-                            var currentSocials = await _clanMemberSMService.GetByMemberIdAsync(model.Member.Id, cancellationToken).ConfigureAwait(false) ?? new List<ClanMemberSocialMediaDTO>();
-
-                            List<ClanMemberSocialMediaDTO> incomingDtos = (model.MemberSocialMedias ?? new List<ClanMemberSMViewModel>())
-                                .Select(vm => new ClanMemberSocialMediaDTO
-                                {
-                                    Id = vm.Id,
-                                    MemberId = vm.MemberId,
-                                    SocialMediaId = vm.SocialMediaId ?? string.Empty,
-                                    SocialMediaUrl = vm.SocialMediaUrl ?? string.Empty,
-                                    Enabled = vm.Enabled
-                                }).ToList();
-
-                            bool socialsEqual = AreSocialListsEqual(currentSocials, incomingDtos);
-                            if (!socialsEqual)
+                            if (!string.Equals(existingMember.FirstName ?? string.Empty, model.Member.FirstName ?? string.Empty, StringComparison.Ordinal))
                             {
-                                try
+                                existingMember.FirstName = model.Member.FirstName;
+                                memberChanged = true;
+                            }
+
+                            if (!string.Equals(existingMember.LastName ?? string.Empty, model.Member.LastName ?? string.Empty, StringComparison.Ordinal))
+                            {
+                                existingMember.LastName = model.Member.LastName;
+                                memberChanged = true;
+                            }
+
+                            if (memberChanged)
+                            {
+                                db.ClanMembers.Update(existingMember);
+                                await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                                _logger.LogInformation("ClanMember {MemberId} actualizado por usuario {UserId}.", existingMember.Id, userId);
+                            }
+
+                            if (uploadedNewFile && !string.IsNullOrWhiteSpace(previousImageKey))
+                            {
+                                bool looksLikeS3Key = !(previousImageKey.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                                                        || previousImageKey.StartsWith("/")
+                                                        || previousImageKey.StartsWith("~"));
+
+                                if (looksLikeS3Key && !string.Equals(previousImageKey, existingMember.ProfileImage, StringComparison.Ordinal))
                                 {
-                                    await _clanMemberSMService.SyncForMemberAsync(model.Member.Id, incomingDtos, cancellationToken).ConfigureAwait(false);
-                                    _logger.LogInformation("Redes sociales sincronizadas para Member {MemberId} por usuario {UserId}.", model.Member.Id, userId);
-                                }
-                                catch (Exception ex)
-                                {
-                                    _logger.LogError(ex, "Error sincronizando redes sociales para MemberId {MemberId}", model.Member.Id);
-                                    ModelState.AddModelError(string.Empty, "Error al guardar redes sociales.");
-                                    return View(model);
+                                    try
+                                    {
+                                        await _s3Service.DeleteObjectAsync(previousImageKey, cancellationToken).ConfigureAwait(false);
+                                        _logger.LogInformation("Imagen previa {Key} eliminada de S3 para Member {MemberId}", previousImageKey, existingMember.Id);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        _logger.LogWarning(ex, "No se pudo eliminar imagen previa {Key} de S3 para Member {MemberId}", previousImageKey, existingMember.Id);
+                                    }
                                 }
                             }
                         }
                     }
 
-                    // Renovar cookie claims tras la actualización de usuario (siempre renovamos para reflejar posibles cambios)
-                    var updatedUser = await _userService.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
-                    if (updatedUser != null)
+                    if (model.MemberSocialMedias != null)
                     {
-                        var claims = new List<Claim>
+                        var currentSocials = await _clanMemberSMService.GetByMemberIdAsync(model.Member.Id, cancellationToken).ConfigureAwait(false) ?? new List<ClanMemberSocialMediaDTO>();
+
+                        List<ClanMemberSocialMediaDTO> incomingDtos = (model.MemberSocialMedias ?? new List<ClanMemberSMViewModel>())
+                            .Select(vm => new ClanMemberSocialMediaDTO
+                            {
+                                Id = vm.Id,
+                                MemberId = vm.MemberId,
+                                SocialMediaId = vm.SocialMediaId ?? string.Empty,
+                                SocialMediaUrl = vm.SocialMediaUrl ?? string.Empty,
+                                Enabled = vm.Enabled
+                            }).ToList();
+
+                        bool socialsEqual = AreSocialListsEqual(currentSocials, incomingDtos);
+                        if (!socialsEqual)
                         {
-                            new Claim(ClaimTypes.NameIdentifier, updatedUser.Id.ToString()),
-                            new Claim(ClaimTypes.Name, updatedUser.Nickname),
-                            new Claim(ClaimTypes.Email, updatedUser.Email ?? string.Empty),
-                            new Claim("roleid", updatedUser.RoleId.ToString())
-                        };
-
-                        var identity = new ClaimsIdentity(claims, Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
-                        var principal = new ClaimsPrincipal(identity);
-                        await HttpContext.SignInAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme, principal);
+                            try
+                            {
+                                await _clanMemberSMService.SyncForMemberAsync(model.Member.Id, incomingDtos, cancellationToken).ConfigureAwait(false);
+                                _logger.LogInformation("Redes sociales sincronizadas para Member {MemberId} por usuario {UserId}.", model.Member.Id, userId);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Error sincronizando redes sociales para MemberId {MemberId}", model.Member.Id);
+                                ModelState.AddModelError(string.Empty, "Error al guardar redes sociales.");
+                                return View(model);
+                            }
+                        }
                     }
-
-                    TempData["SuccessMessage"] = "Perfil actualizado correctamente.";
-                    return RedirectToAction(nameof(Profile));
                 }
-                catch (InvalidOperationException ex)
+
+                var updatedUser = await _userService.GetByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+                if (updatedUser != null)
                 {
-                    ModelState.AddModelError(string.Empty, ex.Message);
-                    _logger.LogWarning(ex, "Validación al actualizar perfil");
-                    return View(model);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error inesperado actualizando perfil de usuario {UserId}", userId);
-                    ModelState.AddModelError(string.Empty, "Error inesperado al actualizar el perfil.");
-                    return View(model);
-                }
-
-                // Local helper: comparar listas de redes sociales (orden independiente)
-                static bool AreSocialListsEqual(List<ClanMemberSocialMediaDTO> left, List<ClanMemberSocialMediaDTO> right)
-                {
-                    if (left == null && right == null) return true;
-                    if (left == null) left = new List<ClanMemberSocialMediaDTO>();
-                    if (right == null) right = new List<ClanMemberSocialMediaDTO>();
-
-                    if (left.Count != right.Count) return false;
-
-                    // comparar por Id si ambos tienen Ids, fall back a SocialMediaId+Url
-                    var normalizedLeft = left.Select(s => new
+                    var claims = new List<Claim>
                     {
-                        Id = s.Id,
-                        SocialMediaId = (s.SocialMediaId ?? string.Empty).Trim(),
-                        SocialMediaUrl = (s.SocialMediaUrl ?? string.Empty).Trim(),
-                        Enabled = s.Enabled
-                    }).OrderBy(x => x.Id).ThenBy(x => x.SocialMediaId).ToList();
+                        new Claim(ClaimTypes.NameIdentifier, updatedUser.Id.ToString()),
+                        new Claim(ClaimTypes.Name, updatedUser.Nickname),
+                        new Claim(ClaimTypes.Email, updatedUser.Email ?? string.Empty),
+                        new Claim("roleid", updatedUser.RoleId.ToString())
+                    };
 
-                    var normalizedRight = right.Select(s => new
-                    {
-                        Id = s.Id,
-                        SocialMediaId = (s.SocialMediaId ?? string.Empty).Trim(),
-                        SocialMediaUrl = (s.SocialMediaUrl ?? string.Empty).Trim(),
-                        Enabled = s.Enabled
-                    }).OrderBy(x => x.Id).ThenBy(x => x.SocialMediaId).ToList();
-
-                    for (int i = 0; i < normalizedLeft.Count; i++)
-                    {
-                        var a = normalizedLeft[i];
-                        var b = normalizedRight[i];
-
-                        if (a.Id != b.Id) return false;
-                        if (!string.Equals(a.SocialMediaId, b.SocialMediaId, StringComparison.OrdinalIgnoreCase)) return false;
-                        if (!string.Equals(a.SocialMediaUrl, b.SocialMediaUrl, StringComparison.OrdinalIgnoreCase)) return false;
-                        if (a.Enabled != b.Enabled) return false;
-                    }
-
-                    return true;
+                    var identity = new ClaimsIdentity(claims, Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
+                    var principal = new ClaimsPrincipal(identity);
+                    await HttpContext.SignInAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme, principal);
                 }
+
+                TempData["SuccessMessage"] = "Perfil actualizado correctamente.";
+                return RedirectToAction(nameof(Profile));
             }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                _logger.LogWarning(ex, "Validación al actualizar perfil");
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inesperado actualizando perfil de usuario {UserId}", userId);
+                ModelState.AddModelError(string.Empty, "Error inesperado al actualizar el perfil.");
+                return View(model);
+            }
+
+            static bool AreSocialListsEqual(List<ClanMemberSocialMediaDTO> left, List<ClanMemberSocialMediaDTO> right)
+            {
+                if (left == null && right == null) return true;
+                if (left == null) left = new List<ClanMemberSocialMediaDTO>();
+                if (right == null) right = new List<ClanMemberSocialMediaDTO>();
+
+                if (left.Count != right.Count) return false;
+
+                var normalizedLeft = left.Select(s => new
+                {
+                    Id = s.Id,
+                    SocialMediaId = (s.SocialMediaId ?? string.Empty).Trim(),
+                    SocialMediaUrl = (s.SocialMediaUrl ?? string.Empty).Trim(),
+                    Enabled = s.Enabled
+                }).OrderBy(x => x.Id).ThenBy(x => x.SocialMediaId).ToList();
+
+                var normalizedRight = right.Select(s => new
+                {
+                    Id = s.Id,
+                    SocialMediaId = (s.SocialMediaId ?? string.Empty).Trim(),
+                    SocialMediaUrl = (s.SocialMediaUrl ?? string.Empty).Trim(),
+                    Enabled = s.Enabled
+                }).OrderBy(x => x.Id).ThenBy(x => x.SocialMediaId).ToList();
+
+                for (int i = 0; i < normalizedLeft.Count; i++)
+                {
+                    var a = normalizedLeft[i];
+                    var b = normalizedRight[i];
+
+                    if (a.Id != b.Id) return false;
+                    if (!string.Equals(a.SocialMediaId, b.SocialMediaId, StringComparison.OrdinalIgnoreCase)) return false;
+                    if (!string.Equals(a.SocialMediaUrl, b.SocialMediaUrl, StringComparison.OrdinalIgnoreCase)) return false;
+                    if (a.Enabled != b.Enabled) return false;
+                }
+
+                return true;
+            }
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -481,7 +540,6 @@ namespace TNA.APP.Controllers
             }
         }
 
-        // Nuevo endpoint: devuelve el JSON de lifetime stats para un playerId
         [HttpGet]
         public async Task<IActionResult> PlayerLifetimeStats(string playerId)
         {
