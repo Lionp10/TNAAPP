@@ -5,6 +5,13 @@
     Layout = "~/Views/Shared/_DashboardLayout.cshtml";
 }
 
+<style>
+    /* Estilos locales para presentación clara en Delete */
+    .delete-card dt { color: rgba(255,255,255,0.75); font-weight: 600; }
+    .delete-card dd { color: var(--bs-light); margin-bottom: .75rem; }
+    .delete-card .value-truncate { max-width: 640px; display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+</style>
+
 <section class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
@@ -16,8 +23,8 @@
         </div>
     </div>
 
-    <div class="card glass-modal p-3">
-        <dl class="row">
+    <div class="card glass-modal p-3 delete-card">
+        <dl class="row mb-3">
             <dt class="col-sm-3">Nickname</dt>
             <dd class="col-sm-9">@Model.Nickname</dd>
 
@@ -25,13 +32,22 @@
             <dd class="col-sm-9">@Model.FirstName @Model.LastName</dd>
 
             <dt class="col-sm-3">PlayerId</dt>
-            <dd class="col-sm-9 text-truncate" style="max-width:640px;">@Model.PlayerId</dd>
+            <dd class="col-sm-9"><span class="value-truncate">@Model.PlayerId</span></dd>
 
             <dt class="col-sm-3">ClanId</dt>
-            <dd class="col-sm-9 text-truncate" style="max-width:640px;">@Model.ClanId</dd>
+            <dd class="col-sm-9"><span class="value-truncate">@Model.ClanId</span></dd>
 
             <dt class="col-sm-3">Habilitado</dt>
-            <dd class="col-sm-9">@((Model.Enabled) ? "Sí" : "No")</dd>
+            <dd class="col-sm-9">
+                @if (Model.Enabled)
+                {
+                    <span class="badge rounded-pill bg-success">Sí</span>
+                }
+                else
+                {
+                    <span class="badge rounded-pill bg-secondary">No</span>
+                }
+            </dd>
         </dl>
 
         <form asp-action="Delete" method="post">

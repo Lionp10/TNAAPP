@@ -34,7 +34,7 @@
             "FB" => "bi-facebook",
             "X" => "bi-x",
             "ST" => "bi-steam",
-            "TK" => "bi bi-tiktok", 
+            "TK" => "bi bi-tiktok",
             "RD" => "bi-reddit",
             "SP" => "bi-chat-square",
             "WS" => "bi-whatsapp",
@@ -42,6 +42,16 @@
         };
     }
 }
+
+<style>
+    /* Estilos locales para mejorar presentación */
+    .member-card dt { color: rgba(255,255,255,0.75); font-weight: 600; }
+    .member-card dd { color: var(--bs-light); margin-bottom: .75rem; }
+    .member-card .field-value { display: inline-block; max-width: 100%; vertical-align: middle; }
+    .member-card .value-truncate { max-width: 560px; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .member-card .nickname { font-size: 1.45rem; font-weight:700; margin-bottom: .25rem; }
+    .member-card .subtext { color: rgba(255,255,255,0.55); margin-bottom: .75rem; }
+</style>
 
 <section class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -54,25 +64,37 @@
         </div>
     </div>
 
-    <div class="card glass-modal p-3">
-        <div class="row">
+    <div class="card glass-modal p-3 member-card">
+        <div class="row g-3 align-items-start">
             <div class="col-md-8">
-                <h4 class="mb-2">@Model.Member.Nickname</h4>
-                <p class="text-muted mb-1">@($"{Model.Member.FirstName} {Model.Member.LastName}")</p>
-                <p class="text-light mb-1"><strong>PlayerId:</strong> <span class="text-truncate d-inline-block" style="max-width:560px;">@Model.Member.PlayerId</span></p>
-                <p class="text-light mb-1"><strong>ClanId:</strong> <span class="text-truncate d-inline-block" style="max-width:560px;">@Model.Member.ClanId</span></p>
-                <p class="mb-0">
-                    <strong>Habilitado:</strong>
-                    @if (Model.Member.Enabled)
-                    {
-                        <span class="badge rounded-pill bg-success ms-2">Sí</span>
-                    }
-                    else
-                    {
-                        <span class="badge rounded-pill bg-secondary ms-2">No</span>
-                    }
-                </p>
+                <div class="nickname">@Model.Member.Nickname</div>
+                <div class="subtext small">@($"{Model.Member.FirstName} {Model.Member.LastName}")</div>
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">PlayerId</dt>
+                    <dd class="col-sm-9">
+                        <span class="field-value value-truncate">@Model.Member.PlayerId</span>
+                    </dd>
+
+                    <dt class="col-sm-3">ClanId</dt>
+                    <dd class="col-sm-9">
+                        <span class="field-value value-truncate">@Model.Member.ClanId</span>
+                    </dd>
+
+                    <dt class="col-sm-3">Habilitado</dt>
+                    <dd class="col-sm-9">
+                        @if (Model.Member.Enabled)
+                        {
+                            <span class="badge rounded-pill bg-success">Sí</span>
+                        }
+                        else
+                        {
+                            <span class="badge rounded-pill bg-secondary">No</span>
+                        }
+                    </dd>
+                </dl>
             </div>
+
             <div class="col-md-4 text-end">
                 <img src="@imgSrc" alt="Avatar" class="img-fluid rounded" style="max-height:120px;" />
             </div>
@@ -80,7 +102,7 @@
 
         <hr />
 
-        <h5>Redes sociales</h5>
+        <h5 class="mb-3">Redes sociales</h5>
         @if (Model.SocialMedias == null || !Model.SocialMedias.Any())
         {
             <p class="text-light">No hay redes registradas.</p>

@@ -3,353 +3,107 @@
 
 @section Hero { }
 
-@{
-    ViewData["Title"] = "Miembros";
-    string IconClassFor(string id) => id?.ToUpperInvariant() switch
-    {
-        "IG" => "bi-instagram",
-        "YT" => "bi-youtube",
-        "DC" or "DI" => "bi-discord",
-        "TW" => "bi-twitch",
-        "FB" => "bi-facebook",
-        "X" => "bi-x",
-        "ST" => "bi-steam",
-        _ => "bi-link-45deg"
-    };
-}
-
-<link href="~/css/lifetime-stats.css" rel="stylesheet" />
-
-<section class="container mt-5">
-    <h2 class="mb-3">Miembros del clan</h2>
-
-    @if (Model == null || !Model.Any())
-    {
-        <div class="glass-card">No hay miembros para mostrar.</div>
+    @{
+        ViewData["Title"] = "Miembros";
+        string IconClassFor(string id) => id?.ToUpperInvariant() switch
+        {
+            "IG" => "bi-instagram",
+            "YT" => "bi-youtube",
+            "DC" or "DI" => "bi-discord",
+            "TW" => "bi-twitch",
+            "FB" => "bi-facebook",
+            "X" => "bi-x",
+            "TK" => "bi-tiktok",
+            "ST" => "bi-steam",
+            "RD" => "bi-reddit",
+            _ => "bi-link-45deg"
+        };
     }
-    else
-    {
-        <div class="row g-3">
-            @foreach (var item in Model)
-            {
-                var m = item.Member;
 
-                string imgSrc;
-                if (string.IsNullOrWhiteSpace(m.ProfileImage))
-                {
-                    imgSrc = Url.Content("~/images/avatar-placeholder.webp");
-                }
-                else if (m.ProfileImage.StartsWith("~") || m.ProfileImage.StartsWith("/"))
-                {
-                    imgSrc = Url.Content(m.ProfileImage);
-                }
-                else if (m.ProfileImage.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-                {
-                    imgSrc = m.ProfileImage;
-                }
-                else
-                {
-                    imgSrc = Url.Action("Image", "Media", new { key = m.ProfileImage }) ?? Url.Content("~/images/avatar-placeholder.webp");
-                }
+    <link href="~/css/lifetime-stats.css" rel="stylesheet" />
 
-                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                    <article class="glass-card d-flex flex-column align-items-start">
-                        <div class="w-100 d-flex align-items-center gap-3">
-                            <img src="@imgSrc"
-                                 alt="@m.Nickname"
-                                 class="rounded-circle member-avatar" />
-                            <div class="flex-grow-1">
-                                <div class="d-flex">
-                                    <div class="card-title">@m.Nickname</div>
-                                    <div>
-                                        <a class="stats-link btn-lifetime-stats" href="#" data-playerid="@m.PlayerId" data-playernick="@m.Nickname" title="Ver estadísticas lifetime">
-                                            <i class="bi bi-bar-chart-fill text-info"></i>
-                                        </a>
+    <section class="container mt-5">
+        <h2 class="mb-3">Miembros del clan</h2>
+
+        @if (Model == null || !Model.Any())
+        {
+            <div class="glass-card">No hay miembros para mostrar.</div>
+        }
+        else
+        {
+            <div class="row g-3">
+                @foreach (var item in Model)
+                {
+                    var m = item.Member;
+
+                    string imgSrc;
+                    if (string.IsNullOrWhiteSpace(m.ProfileImage))
+                    {
+                        imgSrc = Url.Content("~/images/avatar-placeholder.webp");
+                    }
+                    else if (m.ProfileImage.StartsWith("~") || m.ProfileImage.StartsWith("/"))
+                    {
+                        imgSrc = Url.Content(m.ProfileImage);
+                    }
+                    else if (m.ProfileImage.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                    {
+                        imgSrc = m.ProfileImage;
+                    }
+                    else
+                    {
+                        imgSrc = Url.Action("Image", "Media", new { key = m.ProfileImage }) ?? Url.Content("~/images/avatar-placeholder.webp");
+                    }
+
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                        <article class="glass-card d-flex flex-column align-items-start">
+                            <div class="w-100 d-flex align-items-center gap-3">
+                                <img src="@imgSrc"
+                                     alt="@m.Nickname"
+                                     class="rounded-circle member-avatar" />
+                                <div class="flex-grow-1">
+                                    <div class="d-flex">
+                                        <div class="card-title">@m.Nickname</div>
+                                        <div>
+                                            <a class="stats-link btn-lifetime-stats" href="@Url.Action("Player", "Stats", new { playerId = m.PlayerId, nick = m.Nickname })" title="Ver estadísticas lifetime">
+                                                <i class="bi bi-bar-chart-fill text-info"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <div class="glass-meta small">
+                                        @if (!string.IsNullOrWhiteSpace(m.FirstName) || !string.IsNullOrWhiteSpace(m.LastName))
+                                        {
+                                            @($"{m.FirstName} {m.LastName}".Trim())
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Sin nombre</span>
+                                        }
                                     </div>
                                 </div>
+                            </div>
 
-                                <div class="glass-meta small">
-                                    @if (!string.IsNullOrWhiteSpace(m.FirstName) || !string.IsNullOrWhiteSpace(m.LastName))
+                            <div class="mt-3 w-100">
+                                <div class="d-flex flex-wrap gap-2">
+                                    @if (item.SocialMedias != null && item.SocialMedias.Any())
                                     {
-                                        @($"{m.FirstName} {m.LastName}".Trim())
+                                        foreach (var sm in item.SocialMedias.Where(s => s.Enabled))
+                                        {
+                                            var icon = IconClassFor(sm.SocialMediaId);
+                                            <a class="social-link" href="@sm.SocialMediaUrl" target="_blank" rel="noopener noreferrer" aria-label="@sm.SocialMediaId">
+                                                <i class="@icon"></i>
+                                            </a>
+                                        }
                                     }
                                     else
                                     {
-                                        <span class="text-muted">Sin nombre</span>
+                                        <span class="badge-accent">Sin redes</span>
                                     }
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="mt-3 w-100">
-                            <div class="d-flex flex-wrap gap-2">
-                                @if (item.SocialMedias != null && item.SocialMedias.Any())
-                                {
-                                    foreach (var sm in item.SocialMedias.Where(s => s.Enabled))
-                                    {
-                                        var icon = IconClassFor(sm.SocialMediaId);
-                                        <a class="social-link" href="@sm.SocialMediaUrl" target="_blank" rel="noopener noreferrer" aria-label="@sm.SocialMediaId">
-                                            <i class="@icon"></i>
-                                        </a>
-                                    }
-                                }
-                                else
-                                {
-                                    <span class="badge-accent">Sin redes</span>
-                                }
-                            </div>
-                        </div>
-                    </article>
-                </div>
-            }
-        </div>
-    }
-</section>
-
-<div class="modal fade" id="lifetimeModal" tabindex="-1" aria-labelledby="lifetimeModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content bg-dark text-light">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title d-flex align-items-center gap-2" id="lifetimeModalLabel">
-                    <i class="bi bi-bar-chart-fill text-light"></i>
-                    Lifetime stats
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-                <div id="lifetimeContent" style="display:none;">
-                    <div class="mb-4 p-3 bg-secondary bg-opacity-25 rounded">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-person-circle text-light fs-4"></i>
-                            <div>
-                                <strong class="text-light fw-bold">Jugador:</strong>
-                                <span id="lifetimePlayerName" class="fs-5"></span>
-                            </div>
-                        </div>
+                        </article>
                     </div>
-
-                    <div id="modesContainer" class="row g-4">
-                        
-                    </div>
-                </div>
-
-                <div id="lifetimeError" class="alert alert-danger d-none" role="alert"></div>
-
-                <div id="lifetimeSpinner" class="text-center py-5">
-                    <div class="spinner-border text-info" role="status">
-                        <span class="visually-hidden">Cargando...</span>
-                    </div>
-                    <div class="mt-2 text-muted">Cargando estadísticas...</div>
-                </div>
-            </div>
-            <div class="modal-footer border-secondary">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
-    <script>
-        (function ($) {
-            $(function () {
-                var modalEl = document.getElementById('lifetimeModal');
-                var bsModal = new bootstrap.Modal(modalEl, {});
-
-                function formatDuration(value) {
-                    if (value == null || value === '') return '00:00:00';
-                    var secs = Number(value);
-                    if (isNaN(secs) || !isFinite(secs)) return String(value);
-                    var total = Math.floor(secs);
-                    var h = Math.floor(total / 3600);
-                    var m = Math.floor((total % 3600) / 60);
-                    var s = total % 60;
-                    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
                 }
-
-                function renderModeCard(modeKey, data) {
-                    if (!data) {
-                        return '<div class="col-12 col-md-4"><div class="glass-card p-4 text-center text-muted">No hay datos para ' + modeKey + '.</div></div>';
-                    }
-
-                    var wins = data.wins ?? 0;
-                    var kills = data.kills ?? 0;
-                    var damage = data.damageDealt ?? 0;
-                    var rounds = data.roundsPlayed ?? 0;
-                    var timeSurvived = formatDuration(data.timeSurvived ?? 0);
-                    var headshots = data.headshotKills ?? 0;
-                    var assists = data.assists ?? 0;
-                    var revives = data.revives ?? 0;
-                    var top10s = data.top10s ?? 0;
-
-                    var modeDisplayName = '';
-                    if (modeKey === 'solo') modeDisplayName = 'Solo TPP';
-                    else if (modeKey === 'duo') modeDisplayName = 'Duo TPP';
-                    else if (modeKey === 'squad') modeDisplayName = 'Squad TPP';
-                    else if (modeKey === 'solo-fpp') modeDisplayName = 'Solo FPP';
-                    else if (modeKey === 'duo-fpp') modeDisplayName = 'Duo FPP';
-                    else if (modeKey === 'squad-fpp') modeDisplayName = 'Squad FPP';
-
-                    var modeIcon = modeKey.includes('fpp') ? 'bi-eye' : 'bi-people';
-
-                    var html =
-                        '<div class="col-12 col-md-4">' +
-                        '<div class="glass-card p-4 h-100">' +
-                        '<div class="d-flex align-items-center justify-content-between mb-3">' +
-                        '<h6 class="mb-0 d-flex align-items-center gap-2 text-light">' +
-                        '<i class="' + modeIcon + '"></i>' + modeDisplayName +
-                        '</h6>' +
-                        '<span class="badge bg-info text-light">' + rounds + ' partidas</span>' +
-                        '</div>' +
-
-                        '<div class="row g-3">' +
-                        '<div class="col-6">' +
-                        '<div class="stat-item bg-dark bg-opacity-75 p-3 rounded border border-secondary border-opacity-50">' +
-                        '<div class="d-flex align-items-center gap-2 mb-1">' +
-                            '<i class="bi bi-trophy-fill text-info"></i>' +
-                        '<small class="text-light fw-bold">Victorias</small>' +
-                        '</div>' +
-                        '<div class="fs-4 fw-bold text-light">' + wins + '</div>' +
-                        '</div></div>' +
-
-                        '<div class="col-6">' +
-                        '<div class="stat-item bg-dark bg-opacity-75 p-3 rounded border border-secondary border-opacity-50">' +
-                        '<div class="d-flex align-items-center gap-2 mb-1">' +
-                            '<i class="bi bi-crosshair text-info"></i>' +
-                        '<small class="text-light fw-bold">Kills</small>' +
-                        '</div>' +
-                        '<div class="fs-4 fw-bold text-light">' + kills + '</div>' +
-                        '</div></div>' +
-
-                        '<div class="col-6">' +
-                        '<div class="stat-item bg-dark bg-opacity-75 p-3 rounded border border-secondary border-opacity-50">' +
-                        '<div class="d-flex align-items-center gap-2 mb-1">' +
-                        '<i class="bi bi-bullseye text-info"></i>' +
-                        '<small class="text-light fw-bold">Headshots</small>' +
-                        '</div>' +
-                        '<div class="fs-4 fw-bold text-light">' + headshots + '</div>' +
-                        '</div></div>' +
-
-                        '<div class="col-6">' +
-                        '<div class="stat-item bg-dark bg-opacity-75 p-3 rounded border border-secondary border-opacity-50">' +
-                        '<div class="d-flex align-items-center gap-2 mb-1">' +
-                            '<i class="bi bi-hand-thumbs-up text-info"></i>' +
-                        '<small class="text-light fw-bold">Asistencias</small>' +
-                        '</div>' +
-                        '<div class="fs-4 fw-bold text-light">' + assists + '</div>' +
-                        '</div></div>' +
-                        '</div>' +
-
-                        '<div class="mt-3 pt-3 border-top border-secondary border-opacity-25">' +
-                        '<div class="row g-2 small">' +
-                        '<div class="col-6 d-flex align-items-center gap-2">' +
-                        '<i class="bi bi-heart-pulse text-info"></i>' +
-                        '<span class="text-white fw-bold">Revives:</span> <span class="text-light">' + revives + '</span>' +
-                        '</div>' +
-                        '<div class="col-6 d-flex align-items-center gap-2">' +
-                        '<i class="bi bi-award text-info"></i>' +
-                            '<span class="text-white fw-bold">Top 10s:</span> <span class="text-light">' + top10s + '</span>' +
-                        '</div>' +
-                        '<div class="col-6 d-flex align-items-center gap-2">' +
-                        '<i class="bi bi-lightning text-info"></i>' +
-                            '<span class="text-white fw-bold">Daño:</span> <span class="text-light">' + damage.toLocaleString() + '</span>' +
-                        '</div>' +
-                        '<div class="col-6 d-flex align-items-center gap-2">' +
-                        '<i class="bi bi-clock text-info"></i>' +
-                            '<span class="text-white fw-bold">Tiempo:</span> <span class="text-light">' + timeSurvived + '</span>' +
-                        '</div>' +
-                        '</div></div>' +
-                        '</div></div>';
-                    return html;
-                }
-
-                $('.btn-lifetime-stats').on('click', function (e) {
-                    e.preventDefault();
-                    var $btn = $(this);
-                    var playerId = $btn.data('playerid');
-                    var playerNick = $btn.data('playernick') || playerId;
-
-                    if (!playerId) return;
-
-                    $('#lifetimeModalLabel').html('<i class="bi bi-bar-chart-fill text-light"></i> Lifetime stats — ' + playerNick);
-                    $('#lifetimePlayerName').text(playerNick);
-                    $('#lifetimeError').addClass('d-none').text('');
-                    $('#lifetimeContent').hide();
-                    $('#modesContainer').empty();
-
-                    $('#lifetimeSpinner').show().attr('aria-busy', 'true');
-
-                    bsModal.show();
-
-                    $.ajax({
-                        url: '@Url.Action("PlayerLifetimeStats", "Home")',
-                        method: 'GET',
-                        data: { playerId: playerId },
-                        dataType: 'json',
-                        timeout: 15000,
-                        success: function (resp) {
-                            console.debug('PlayerLifetimeStats: respuesta recibida', resp);
-                            try {
-                                var gm = resp && resp.data && resp.data.attributes && resp.data.attributes.gameModeStats ? resp.data.attributes.gameModeStats : null;
-                                if (!gm) {
-                                    $('#lifetimeError').removeClass('d-none').text('No se encontraron estadísticas para este jugador.');
-                                    return;
-                                }
-
-                                var html = '';
-
-                                html += '<div class="mb-5">';
-                                html += '<div class="d-flex align-items-center gap-2 mb-4">';
-                                html += '<i class="bi bi-eye-fill text-light fs-4"></i>';
-                                html += '<h4 class="mb-0 text-light fw-bold">FPP (Primera Persona)</h4>';
-                                html += '</div>';
-                                html += '<div class="row g-4">';
-
-                                var fppModes = ['solo-fpp', 'duo-fpp', 'squad-fpp'];
-                                fppModes.forEach(function (m) {
-                                    var entry = gm[m];
-                                    html += renderModeCard(m, entry);
-                                });
-
-                                html += '</div></div>';
-
-                                html += '<div class="mb-3">';
-                                html += '<div class="d-flex align-items-center gap-2 mb-4">';
-                                    html += '<i class="bi bi-people-fill text-light fs-4"></i>';
-                                html += '<h4 class="mb-0 text-light fw-bold">TPP (Tercera Persona)</h4>';
-                                html += '</div>';
-                                html += '<div class="row g-4">';
-
-                                var tppModes = ['solo', 'duo', 'squad'];
-                                tppModes.forEach(function (m) {
-                                    var entry = gm[m];
-                                    html += renderModeCard(m, entry);
-                                });
-
-                                html += '</div></div>';
-
-                                $('#modesContainer').html(html);
-                                $('#lifetimeContent').show();
-                            } catch (ex) {
-                                console.error('Error procesando la respuesta:', ex);
-                                $('#lifetimeError').removeClass('d-none').text('Error procesando la respuesta.');
-                            }
-                        },
-                        error: function (xhr, status, err) {
-                            console.error('PlayerLifetimeStats: error', status, err, xhr && xhr.responseText);
-                            var msg = 'Error al obtener datos.';
-                            if (status === 'timeout') msg = 'La petición ha tardado demasiado. Inténtalo de nuevo.';
-                            if (xhr && xhr.responseText) {
-                                try { msg = JSON.parse(xhr.responseText).message || xhr.responseText; } catch (e) { /* mantener msg */ }
-                            }
-                            $('#lifetimeError').removeClass('d-none').text(msg);
-                        },
-                        complete: function () {
-                            $('#lifetimeSpinner').hide().attr('aria-busy', 'false');
-                        }
-                    });
-                });
-            });
-        })(jQuery);
-    </script>
-}
+            </div>
+        }
+    </section>

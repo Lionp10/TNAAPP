@@ -226,6 +226,36 @@ namespace TNA.APP.Controllers
 
             if (!ModelState.IsValid)
             {
+                if (claimRoleId == 3 && model.MemberId.HasValue && model.Member == null)
+                {
+                    var db = HttpContext.RequestServices.GetService(typeof(TNADbContext)) as TNADbContext;
+                    if (db != null)
+                    {
+                        try
+                        {
+                            var member = await db.ClanMembers
+                                                 .AsNoTracking()
+                                                 .FirstOrDefaultAsync(m => m.Id == model.MemberId.Value, cancellationToken)
+                                                 .ConfigureAwait(false);
+                            if (member != null)
+                            {
+                                model.Member = new ClanMemberViewModel
+                                {
+                                    Id = member.Id,
+                                    FirstName = member.FirstName,
+                                    LastName = member.LastName,
+                                    Nickname = member.Nickname,
+                                    PlayerId = member.PlayerId,
+                                    ClanId = member.ClanId,
+                                    ProfileImage = member.ProfileImage,
+                                    Enabled = member.Enabled
+                                };
+                            }
+                        }
+                        catch { /* no bloqueamos la validación por este fallo */ }
+                    }
+                }
+
                 if (claimRoleId == 3 && model.MemberId.HasValue && (model.MemberSocialMedias == null || !model.MemberSocialMedias.Any()))
                 {
                     try

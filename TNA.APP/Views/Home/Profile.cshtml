@@ -75,6 +75,23 @@
                                     <span asp-validation-for="Email" class="text-danger small"></span>
                                 </div>
 
+                                @if (showMemberFields && Model.MemberId != null && Model.Member != null)
+                                {
+                                    <div class="row gx-2">
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="Member.FirstName" class="form-label small text-muted">Nombre</label>
+                                            <input asp-for="Member.FirstName" class="form-control" />
+                                            <span asp-validation-for="Member.FirstName" class="text-danger small"></span>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="Member.LastName" class="form-label small text-muted">Apellido</label>
+                                            <input asp-for="Member.LastName" class="form-control" />
+                                            <span asp-validation-for="Member.LastName" class="text-danger small"></span>
+                                        </div>
+                                    </div>
+                                }
+
                                 <div class="mb-3">
                                     <label asp-for="Password" class="form-label small text-muted"></label>
                                     <div class="d-flex align-items-center gap-2">
