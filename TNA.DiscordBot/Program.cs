@@ -210,9 +210,11 @@ class Program
         int posW = 3;
         int nickMax = Math.Min(40, ranking.Max(r => (r.PlayerNickname ?? r.PlayerId).Length));
         nickMax = Math.Max(8, nickMax);
+        int killsW = 6;
+        int damageW = 10;
         int kdaW = 7;
 
-        string header = $"{ "#".PadRight(posW)} | { "Nickname".PadRight(nickMax)} | { "KDa".PadLeft(kdaW)}";
+        string header = $"{ "Pos".PadRight(posW)} | { "Nickname".PadRight(nickMax)} | { "Kills".PadLeft(killsW)} | { "Daño".PadLeft(damageW)} | { "KDA".PadLeft(kdaW)}";
         string sep = new string('-', header.Length);
 
         var messages = new List<string>();
@@ -226,17 +228,17 @@ class Program
             var nick = string.IsNullOrWhiteSpace(p.PlayerNickname) ? p.PlayerId : p.PlayerNickname;
             if (nick.Length > nickMax) nick = nick.Substring(0, nickMax - 1) + "…";
 
-            // Cálculo aproximado de KDA: si no tenemos deaths en DTO, usamos MatchesCount como proxy.
-            // KDA = (Kills + Assists) / max(1, MatchesCount)
+            var killsStr = p.TotalKills.ToString();
+            var damageStr = Math.Round(p.TotalDamageDealt, 0).ToString("F0");
+
             double kda = 0.0;
             if (p.MatchesCount > 0)
             {
                 kda = (double)(p.TotalKills + p.TotalAssists) / Math.Max(1, p.MatchesCount);
             }
-
             var kdaStr = kda.ToString("F2");
 
-            var line = $"{pos.ToString().PadRight(posW)} | {nick.PadRight(nickMax)} | {kdaStr.PadLeft(kdaW)}";
+            var line = $"{pos.ToString().PadRight(posW)} | {nick.PadRight(nickMax)} | {killsStr.PadLeft(killsW)} | {damageStr.PadLeft(damageW)} | {kdaStr.PadLeft(kdaW)}";
 
             if (sb.Length + line.Length + 10 > MaxMessageLen)
             {
