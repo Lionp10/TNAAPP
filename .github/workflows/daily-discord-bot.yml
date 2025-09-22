@@ -30,4 +30,10 @@ jobs:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
           DATABASE_CONNECTION: ${{ secrets.DATABASE_CONNECTION }}
-        run: dotnet run --project ./TNA.DiscordBot/TNA.DiscordBot.csproj --configuration Release -- --run-once
+        run: |
+          # Limpiar espacios, saltos de línea o comillas del canal
+          export DISCORD_CHANNEL_ID=$(echo "$DISCORD_CHANNEL_ID" | tr -d '[:space:]' | tr -d '"')
+          
+          echo "Usando DISCORD_CHANNEL_ID limpio: $DISCORD_CHANNEL_ID"
+          
+          dotnet run --project ./TNA.DiscordBot/TNA.DiscordBot.csproj --configuration Release -- --run-once
