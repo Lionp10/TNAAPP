@@ -18,6 +18,7 @@ namespace TNA.BLL.Services.Implementations
         private readonly IClanMemberRepository _clanMemberRepository;
         private readonly IMatchRepository _matchRepository;
         private readonly IPlayerMatchRepository _playerMatchRepository;
+        private readonly IPlayerLifetimeRepository _playerLifetimeRepository;
         private readonly IMapper _mapper;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly PubgOptions _options;
@@ -34,6 +35,7 @@ namespace TNA.BLL.Services.Implementations
             IClanMemberRepository clanMemberRepository,
             IMatchRepository matchRepository,
             IPlayerMatchRepository playerMatchRepository,
+            IPlayerLifetimeRepository playerLifetimeRepository,
             IMapper mapper,
             IHttpClientFactory httpClientFactory,
             IOptions<PubgOptions> options,
@@ -43,6 +45,7 @@ namespace TNA.BLL.Services.Implementations
             _clanMemberRepository = clanMemberRepository ?? throw new ArgumentNullException(nameof(clanMemberRepository));
             _matchRepository = matchRepository ?? throw new ArgumentNullException(nameof(matchRepository));
             _playerMatchRepository = playerMatchRepository ?? throw new ArgumentNullException(nameof(playerMatchRepository));
+            _playerLifetimeRepository = playerLifetimeRepository ?? throw new ArgumentNullException(nameof(playerLifetimeRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
@@ -353,6 +356,19 @@ namespace TNA.BLL.Services.Implementations
 
             try
             {
+                var existing = await _playerLifetimeRepository.GetByPlayerIdAsync(playerId, cancellationToken).ConfigureAwait(false);
+
+                var nowBaDate = DateTime.UtcNow.AddHours(-3).Date;
+
+                if (existing != null)
+                {
+                    var existingBaDate = existing.DateOfUpdate.ToUniversalTime().AddHours(-3).Date;
+                    if (existingBaDate == nowBaDate)
+                    {
+                        return existing.LifetimeJson;
+                    }
+                }
+
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Accept.Clear();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
@@ -368,15 +384,59 @@ namespace TNA.BLL.Services.Implementations
                     var body = await response.Content.ReadAsStringAsync(cancellationToken);
                     _logger.LogWarning("PUBG lifetime API returned non-success for player {PlayerId}. Status: {StatusCode}. Body: {Body}",
                         playerId, (int)response.StatusCode, body);
+
+                    if (existing != null)
+                        return existing.LifetimeJson;
+
                     return null;
                 }
 
                 var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (existing != null)
+                {
+                    existing.LifetimeJson = responseBody;
+                    existing.DateOfUpdate = DateTime.UtcNow;
+                    try
+                    {
+                        await _playerLifetimeRepository.UpdateAsync(existing, cancellationToken).ConfigureAwait(false);
+                        _logger.LogInformation("Updated PlayerLifetime cache for player {PlayerId}.", playerId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to update PlayerLifetime for player {PlayerId}.", playerId);
+                    }
+                }
+                else
+                {
+                    var newEntity = new PlayerLifetime
+                    {
+                        PlayerId = playerId,
+                        LifetimeJson = responseBody,
+                        DateOfUpdate = DateTime.UtcNow
+                    };
+
+                    try
+                    {
+                        await _playerLifetimeRepository.AddAsync(newEntity, cancellationToken).ConfigureAwait(false);
+                        _logger.LogInformation("Inserted PlayerLifetime cache for player {PlayerId}.", playerId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to insert PlayerLifetime for player {PlayerId}.", playerId);
+                    }
+                }
+
                 return responseBody;
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "HTTP request failed when calling PUBG lifetime API for player {PlayerId}.", playerId);
+                return null;
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "JSON error in GetPlayerLifetimeStatsAsync for player {PlayerId}.", playerId);
                 return null;
             }
             catch (Exception ex)

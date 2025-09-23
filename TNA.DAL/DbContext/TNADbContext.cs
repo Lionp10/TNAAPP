@@ -14,6 +14,7 @@ namespace TNA.DAL.DbContext
         public DbSet<PlayerMatch> PlayerMatches { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Role> Roles { get; set; } = null!;
+        public DbSet<PlayerLifetime> PlayerLifetimes { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -74,6 +75,14 @@ namespace TNA.DAL.DbContext
                  .WithMany()
                  .HasForeignKey(u => u.MemberId)
                  .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<PlayerLifetime>(b =>
+            {
+                b.Property(p => p.PlayerId).HasMaxLength(128).IsRequired();
+                b.Property(p => p.DateOfUpdate).IsRequired();
+                b.Property(p => p.LifetimeJson).HasColumnType("nvarchar(max)");
+                b.HasIndex(p => p.PlayerId);
             });
         }
     }

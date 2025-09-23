@@ -570,32 +570,6 @@ namespace TNA.APP.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<IActionResult> PlayerLifetimeStats(string playerId)
-        {
-            if (string.IsNullOrWhiteSpace(playerId))
-                return BadRequest("playerId es requerido.");
-
-            try
-            {
-                var json = await _pubgService.GetPlayerLifetimeStatsAsync(playerId, HttpContext.RequestAborted);
-                if (json == null)
-                    return StatusCode(502, "No se pudo obtener datos desde PUBG.");
-
-                return Content(json, "application/json");
-            }
-            catch (OperationCanceledException)
-            {
-                _logger.LogInformation("PlayerLifetimeStats cancelado.");
-                return StatusCode(499);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener PlayerLifetimeStats para {PlayerId}", playerId);
-                return StatusCode(500);
-            }
-        }
-
         public IActionResult Privacy() => View();
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
