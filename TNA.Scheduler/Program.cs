@@ -4,6 +4,7 @@ using TNA.BLL.Mapping;
 using TNA.BLL.Services.Implementations;
 using TNA.BLL.Services.Interfaces;
 using TNA.DAL.DbContext;
+using TNA.DAL.Repositories;
 using TNA.DAL.Repositories.Implementations;
 using TNA.DAL.Repositories.Interfaces;
 using TNA.Scheduler;
@@ -30,6 +31,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddScoped<IClanMemberRepository, ClanMemberRepository>();
         services.AddScoped<IMatchRepository, MatchRepository>();
         services.AddScoped<IPlayerMatchRepository, PlayerMatchRepository>();
+        services.AddScoped<IPlayerLifetimeRepository, PlayerLifetimeRepository>();
 
         services.AddScoped<IClanService, ClanServcice>();
         services.AddScoped<IPubgService, PubgService>();

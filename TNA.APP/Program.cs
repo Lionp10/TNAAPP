@@ -10,6 +10,7 @@ using TNA.DAL.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using TNA.BLL.Utils; 
 using TNA.BLL.DTOs;
+using TNA.DAL.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,7 @@ builder.Services.AddScoped<IClanMemberRepository, ClanMemberRepository>();
 builder.Services.AddScoped<IClanMemberSMRepository, ClanMemberSMRepository>();
 builder.Services.AddScoped<IMatchRepository, MatchRepository>();
 builder.Services.AddScoped<IPlayerMatchRepository, PlayerMatchRepository>();
+builder.Services.AddScoped<IPlayerLifetimeRepository, PlayerLifetimeRepository>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
