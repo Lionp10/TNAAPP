@@ -9,10 +9,11 @@ using TNA.BLL.DTOs;
 using TNA.BLL.Services.Interfaces;
 using TNA.DAL.Entities;
 using TNA.DAL.Repositories.Interfaces;
+using System.Globalization;
 
 namespace TNA.BLL.Services.Implementations
 {
-    public class PubgService : IPubgService
+    public partial class PubgService : IPubgService
     {
         private readonly IClanRepository _clanRepository;
         private readonly IClanMemberRepository _clanMemberRepository;

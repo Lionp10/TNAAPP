@@ -24,14 +24,14 @@ namespace TNA.APP.Controllers
         }
 
         // Acción renombrada: ahora se llama LifetimeStats y devuelve la vista correspondiente
-        public IActionResult LifetimeStats(string playerId, string nick)
+        public IActionResult PlayerStats(string playerId, string nick)
         {
             if (string.IsNullOrWhiteSpace(playerId))
                 return BadRequest("playerId es requerido.");
 
             ViewData["PlayerId"] = playerId;
             ViewData["PlayerNick"] = nick ?? string.Empty;
-            return View("LifetimeStats");
+            return View();
         }
 
         [HttpGet]

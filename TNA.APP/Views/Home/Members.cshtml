@@ -64,8 +64,7 @@
                                     <div class="d-flex">
                                         <div class="card-title">@m.Nickname</div>
                                         <div>
-                                            <!-- Enlace actualizado para llamar a la nueva acción LifetimeStats -->
-                                            <a class="stats-link btn-lifetime-stats" href="@Url.Action("LifetimeStats", "Stats", new { playerId = m.PlayerId, nick = m.Nickname })" title="Ver estadísticas lifetime">
+                                            <a class="stats-link btn-lifetime-stats" href="@Url.Action("PlayerStats", "Stats", new { playerId = m.PlayerId, nick = m.Nickname })" title="Ver estadísticas lifetime">
                                                 <i class="bi bi-bar-chart-fill text-info"></i>
                                             </a>
                                         </div>
