@@ -14,6 +14,7 @@ namespace TNA.BLL.Mapping
             CreateMap<ClanMemberSocialMedia, ClanMemberSocialMediaDTO>().ReverseMap();
             CreateMap<Match, MatchDTO>().ReverseMap();
             CreateMap<PlayerMatch, PlayerMatchDTO>().ReverseMap();
+            CreateMap<RecentGamesStats, RecentGameStatsDTO>().ReverseMap();
 
             CreateMap<User, UserDTO>()
                 .ForMember(dest => dest.RoleDescription, opt => opt.MapFrom(src => src.Role != null ? src.Role.Description : null))

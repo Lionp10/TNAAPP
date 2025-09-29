@@ -15,6 +15,7 @@ namespace TNA.DAL.DbContext
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Role> Roles { get; set; } = null!;
         public DbSet<PlayerLifetime> PlayerLifetimes { get; set; } = null!;
+        public DbSet<RecentGamesStats> RecentGamesStats { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -82,6 +83,27 @@ namespace TNA.DAL.DbContext
                 b.Property(p => p.PlayerId).HasMaxLength(128).IsRequired();
                 b.Property(p => p.DateOfUpdate).IsRequired();
                 b.Property(p => p.LifetimeJson).HasColumnType("nvarchar(max)");
+                b.HasIndex(p => p.PlayerId);
+            });
+
+            modelBuilder.Entity<RecentGamesStats>(b =>
+            {
+                b.Property(p => p.PlayerId).HasMaxLength(128).IsRequired();
+                b.Property(p => p.DateOfUpdate).IsRequired();
+
+                b.Property(p => p.MatchId).HasMaxLength(128).IsRequired(false);
+                b.Property(p => p.CreatedAt).HasMaxLength(50).IsRequired(false);
+                b.Property(p => p.MapName).HasMaxLength(50).IsRequired(false);
+                b.Property(p => p.GameMode).HasMaxLength(50).IsRequired(false);
+                b.Property(p => p.IsCustomMatch).IsRequired();
+
+                b.Property(p => p.DamageDealt).HasColumnType("decimal(18,2)").IsRequired();
+                b.Property(p => p.LongestKill).HasColumnType("decimal(18,2)").IsRequired();
+                b.Property(p => p.RideDistance).HasColumnType("decimal(18,2)").IsRequired();
+                b.Property(p => p.SwimDistance).HasColumnType("decimal(18,2)").IsRequired();
+                b.Property(p => p.WalkDistance).HasColumnType("decimal(18,2)").IsRequired();
+                b.Property(p => p.TimeSurvived).HasColumnType("decimal(18,2)").IsRequired();
+
                 b.HasIndex(p => p.PlayerId);
             });
         }

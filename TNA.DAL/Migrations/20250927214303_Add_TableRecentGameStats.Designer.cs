@@ -12,8 +12,8 @@ using TNA.DAL.DbContext;
 namespace TNA.DAL.Migrations
 {
     [DbContext(typeof(TNADbContext))]
-    [Migration("20250923012753_Add_LifetimeStatsEntity")]
-    partial class Add_LifetimeStatsEntity
+    [Migration("20250927214303_Add_TableRecentGameStats")]
+    partial class Add_TableRecentGameStats
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -234,6 +234,108 @@ namespace TNA.DAL.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("PlayerMatches");
+                });
+
+            modelBuilder.Entity("TNA.DAL.Entities.RecentGamesStats", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Assists")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Boots")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CreatedAt")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("DBNOs")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("DamageDealt")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("DateOfUpdate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GameMode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("HeadshotsKills")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Heals")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsCustomMatch")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("KillPlace")
+                        .HasColumnType("int");
+
+                    b.Property<int>("KillStreaks")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Kills")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("LongestKill")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("MapName")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("MatchId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("PlayerId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("Revives")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("RideDistance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("RoadKills")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SwimDistance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TeamKills")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TimeSurvived")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("VehicleDestroys")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("WalkDistance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("WeaponsAcquired")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WinPlace")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId");
+
+                    b.ToTable("RecentGamesStats");
                 });
 
             modelBuilder.Entity("TNA.DAL.Entities.Role", b =>

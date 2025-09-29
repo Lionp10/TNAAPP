@@ -36,6 +36,7 @@ builder.Services.AddScoped<IClanMemberSMRepository, ClanMemberSMRepository>();
 builder.Services.AddScoped<IMatchRepository, MatchRepository>();
 builder.Services.AddScoped<IPlayerMatchRepository, PlayerMatchRepository>();
 builder.Services.AddScoped<IPlayerLifetimeRepository, PlayerLifetimeRepository>();
+builder.Services.AddScoped<IRecentGameStatsRepository, RecentGamesStatsRepository>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();

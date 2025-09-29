@@ -154,6 +154,32 @@ namespace TNA.DAL.Migrations
                     b.ToTable("Matches");
                 });
 
+            modelBuilder.Entity("TNA.DAL.Entities.PlayerLifetime", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DateOfUpdate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LifetimeJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlayerId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId");
+
+                    b.ToTable("PlayerLifetimes");
+                });
+
             modelBuilder.Entity("TNA.DAL.Entities.PlayerMatch", b =>
                 {
                     b.Property<int>("Id")
@@ -205,6 +231,108 @@ namespace TNA.DAL.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("PlayerMatches");
+                });
+
+            modelBuilder.Entity("TNA.DAL.Entities.RecentGamesStats", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Assists")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Boots")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CreatedAt")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("DBNOs")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("DamageDealt")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("DateOfUpdate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GameMode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("HeadshotsKills")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Heals")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsCustomMatch")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("KillPlace")
+                        .HasColumnType("int");
+
+                    b.Property<int>("KillStreaks")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Kills")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("LongestKill")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("MapName")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("MatchId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("PlayerId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("Revives")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("RideDistance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("RoadKills")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SwimDistance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TeamKills")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TimeSurvived")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("VehicleDestroys")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("WalkDistance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("WeaponsAcquired")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WinPlace")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlayerId");
+
+                    b.ToTable("RecentGamesStats");
                 });
 
             modelBuilder.Entity("TNA.DAL.Entities.Role", b =>
@@ -277,13 +405,15 @@ namespace TNA.DAL.Migrations
                         .HasForeignKey("MemberId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("TNA.DAL.Entities.Role", null)
+                    b.HasOne("TNA.DAL.Entities.Role", "Role")
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Member");
+
+                    b.Navigation("Role");
                 });
 #pragma warning restore 612, 618
         }

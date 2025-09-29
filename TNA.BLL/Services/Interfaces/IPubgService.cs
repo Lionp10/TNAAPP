@@ -9,5 +9,7 @@ namespace TNA.BLL.Services.Interfaces
         Task UpdateStatisticsAsync(CancellationToken cancellationToken = default);
 
         Task<string?> GetPlayerLifetimeStatsAsync(string playerId, CancellationToken cancellationToken = default);
+
+        Task<IEnumerable<RecentGameStatsDTO>> GetOrUpdateRecentGamesAsync(string playerId, CancellationToken cancellationToken = default);
     }
 }

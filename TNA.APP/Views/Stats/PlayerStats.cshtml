@@ -1,60 +1,156 @@
-﻿@{
-    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+﻿@model IEnumerable<TNA.BLL.DTOs.RecentGameStatsDTO>
+@using System.Text.Json
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Estadísticas jugador";
     var playerId = (string?)ViewData["PlayerId"] ?? string.Empty;
     var playerNick = (string?)ViewData["PlayerNick"] ?? playerId;
+    var recentList = (Model ?? Enumerable.Empty<TNA.BLL.DTOs.RecentGameStatsDTO>()).Take(20).ToList();
+    var serverRecentGamesJson = JsonSerializer.Serialize(recentList, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+
+    // Lifetime JSON provisto por el controlador (ya es texto JSON)
+    var serverLifetimeJson = (string?)ViewData["LifetimeJson"] ?? string.Empty;
+
+    // Para inyectarlo como objeto JS: si está vacío dejamos null, si no lo pasamos tal cual (JSON válido)
+    var serverLifetimeJsonForJs = string.IsNullOrWhiteSpace(serverLifetimeJson) ? "null" : serverLifetimeJson;
+
+    // Cálculos para la columna de estadísticas
+    int matchesCount = recentList.Count;
+    double avgPosition = 0;
+    double avgAssists = 0;
+    double avgDamage = 0;
+    if (matchesCount > 0)
+    {
+        avgPosition = recentList.Where(r => r.WinPlace > 0).Any()
+            ? recentList.Where(r => r.WinPlace > 0).Average(r => (double)r.WinPlace)
+            : recentList.Average(r => (double)r.WinPlace);
+
+        avgAssists = recentList.Average(r => (double)r.Assists);
+        avgDamage = recentList.Average(r => (double)r.DamageDealt);
+    }
 }
 
 <link href="~/css/lifetime-stats.css" rel="stylesheet" />
 
-<section class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h2 class="mb-0">Estadísticas — @playerNick</h2>
-            <small class="text-light">Lifetime y modos</small>
-        </div>
-        <div>
-            <a asp-controller="Home" asp-action="Members" class="btn btn-outline-light">Volver</a>
-        </div>
-    </div>
+@section Hero {
 
-    <div id="lifetimeError" class="alert alert-danger d-none" role="alert"></div>
-
-    <div id="lifetimeSpinner" class="text-center py-5">
-        <div class="spinner-border text-info" role="status">
-            <span class="visually-hidden">Cargando...</span>
+    <section class="container mt-4">
+        <div class="d-flex align-items-start justify-content-between mb-3">
+            <div class="hero-left">
+                <h1 class="mb-0 display-6 text-light">Estadísticas — @playerNick</h1>
+                <small class="text-muted">Lifetime y modos</small>
+            </div>
+            <div class="hero-right">
+                <a asp-controller="Home" asp-action="Members" class="btn btn-outline-light">Volver</a>
+            </div>
         </div>
-        <div class="mt-2 text-muted">Cargando estadísticas...</div>
-    </div>
 
-    <div id="lifetimeContent" style="display:none;">
-        <div class="mb-4 p-3 bg-secondary bg-opacity-25 rounded">
-            <div class="d-flex align-items-center gap-2">
+        <!-- Player hero pill -->
+        <div class="mb-4">
+            <div class="p-3 bg-secondary bg-opacity-25 rounded d-flex align-items-center gap-3">
                 <i class="bi bi-person-circle text-light fs-4"></i>
-                <div>
-                    <strong class="text-light fw-bold">Jugador:</strong>
-                    <span id="lifetimePlayerName" class="fs-5">@playerNick</span>
+                <div class="text-light">
+                    <small class="d-block text-muted">Jugador:</small>
+                    <strong class="fs-5">@playerNick</strong>
                 </div>
             </div>
         </div>
 
-        <div id="modesContainer" class="row g-4"></div>
-    </div>
-</section>
+        <!-- Main content row: chart + stats -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="mt-2 p-3 bg-secondary bg-opacity-25 rounded">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="mb-0 text-light"><i class="bi bi-graph-up me-2"></i>Tendencia de posición</h6>
+                        <small class="text-light">Últimas 20</small>
+                    </div>
+
+                    <div id="recentGamesError" class="alert alert-danger d-none" role="alert"></div>
+                    <div id="recentGamesSpinner" class="text-center py-3 d-none">
+                        <div class="spinner-border text-info" role="status"><span class="visually-hidden">Cargando...</span></div>
+                    </div>
+
+                    <div class="position-relative">
+                        <canvas id="positionChart" height="220"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="mt-2 p-3 bg-secondary bg-opacity-25 rounded h-100 d-flex flex-column justify-content-center">
+                    <h6 class="text-light mb-3">Estadísticas de las últimas @matchesCount partidas</h6>
+
+                    <div class="d-flex align-items-center gap-3 py-3 border-bottom border-light border-opacity-10">
+                        <div class="me-2 text-light fs-3"><i class="bi bi-flag"></i></div>
+                        <div class="flex-grow-1">
+                            <small class="text-muted d-block">Posición promedio</small>
+                            <div class="fw-bold text-warning fs-4">#@Math.Round(avgPosition)</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 py-3 border-bottom border-light border-opacity-10">
+                        <div class="me-2 text-light fs-3"><i class="bi bi-crosshair"></i></div>
+                        <div class="flex-grow-1">
+                            <small class="text-muted d-block">Índice A/M</small>
+                            <div class="fw-bold text-warning fs-4">@String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:0.00}", avgAssists)</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 py-3">
+                        <div class="me-2 text-light fs-3"><i class="bi bi-lightning"></i></div>
+                        <div class="flex-grow-1">
+                            <small class="text-muted d-block">Daño promedio</small>
+                            <div class="fw-bold text-warning fs-4">@String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:0.00}", avgDamage)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de Lifetime Stats -->
+        <div class="mt-5" id="lifetimeContent" style="display: none;">
+            <div class="d-flex align-items-center gap-2 mb-4">
+                <i class="bi bi-trophy-fill text-light fs-3"></i>
+                <h3 class="mb-0 text-light fw-bold">Estadísticas Lifetime</h3>
+            </div>
+            
+            <!-- Contenedor donde se inyectarán dinámicamente las tarjetas de modos -->
+            <div id="modesContainer">
+                <!-- Las tarjetas de FPP y TPP se generarán aquí via JavaScript -->
+            </div>
+        </div>
+    </section>
+
+}
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         (function () {
-            function formatDuration(value) {
+            function formatDurationSecs(value) {
                 if (value == null || value === '') return '00:00:00';
                 var secs = Number(value);
-                if (isNaN(secs) || !isFinite(secs)) return String(value);
+                if (isNaN(secs) || !isFinite(secs)) return String(value);   
                 var total = Math.floor(secs);
                 var h = Math.floor(total / 3600);
                 var m = Math.floor((total % 3600) / 60);
                 var s = total % 60;
                 return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
             }
+
+            // Helpers seguros
+            function el(id) { return document.getElementById(id); }
+            function setDisplay(id, value) { var e = el(id); if (e) e.style.display = value; }
+            function show(id) { setDisplay(id, ''); }
+            function hide(id) { setDisplay(id, 'none'); }
+
+            // Datos provistos por el servidor (MVC)
+            var serverItems = @Html.Raw(serverRecentGamesJson);
+            // Inyección: serverLifetimeJsonForJs contiene null o un literal JSON; al usar Raw queda como objeto JS o null
+            var serverLifetimeJson = @Html.Raw(serverLifetimeJsonForJs);
+
+            var chartInstance = null;
 
             function renderModeCard(modeKey, data) {
                 if (!data) {
@@ -65,7 +161,7 @@
                 var kills = data.kills ?? 0;
                 var damage = data.damageDealt ?? 0;
                 var rounds = data.roundsPlayed ?? 0;
-                var timeSurvived = formatDuration(data.timeSurvived ?? 0);
+                var timeSurvived = formatDurationSecs(data.timeSurvived ?? 0);
                 var headshots = data.headshotKills ?? 0;
                 var assists = data.assists ?? 0;
                 var revives = data.revives ?? 0;
@@ -115,82 +211,161 @@
                 return html;
             }
 
-            var playerId = '@playerId';
+            function renderModeCardsFromLifetime(lifetimeObj) {
+                try {
+                    if (!lifetimeObj) return;
+                    var gm = lifetimeObj && lifetimeObj.data && lifetimeObj.data.attributes && lifetimeObj.data.attributes.gameModeStats
+                        ? lifetimeObj.data.attributes.gameModeStats
+                        : null;
+                    if (!gm) return;
 
-            function loadStats() {
-                if (!playerId) {
-                    document.getElementById('lifetimeError').classList.remove('d-none');
-                    document.getElementById('lifetimeError').textContent = 'playerId no especificado.';
-                    document.getElementById('lifetimeSpinner').style.display = 'none';
-                    return;
-                }
-
-                document.getElementById('lifetimeError').classList.add('d-none');
-                document.getElementById('lifetimeContent').style.display = 'none';
-                document.getElementById('modesContainer').innerHTML = '';
-                document.getElementById('lifetimeSpinner').style.display = '';
-
-                fetch('@Url.Action("PlayerLifetimeStats", "Stats")?playerId=' + encodeURIComponent(playerId), { method: 'GET' })
-                    .then(function (r) {
-                        if (!r.ok) return r.text().then(t => { throw new Error(t || r.statusText); });
-                        return r.json();
-                    })
-                    .then(function (resp) {
-                        try {
-                            var gm = resp && resp.data && resp.data.attributes && resp.data.attributes.gameModeStats ? resp.data.attributes.gameModeStats : null;
-                            if (!gm) {
-                                document.getElementById('lifetimeError').classList.remove('d-none');
-                                document.getElementById('lifetimeError').textContent = 'No se encontraron estadísticas para este jugador.';
-                                return;
-                            }
-
-                            var html = '';
-                            html += '<div class="mb-5">';
-                            html += '<div class="d-flex align-items-center gap-2 mb-4">';
-                            html += '<i class="bi bi-eye-fill text-light fs-4"></i>';
-                            html += '<h4 class="mb-0 text-light fw-bold">FPP (Primera Persona)</h4>';
-                            html += '</div>';
-                            html += '<div class="row g-4">';
-                            var fppModes = ['solo-fpp', 'duo-fpp', 'squad-fpp'];
-                            fppModes.forEach(function (m) {
-                                var entry = gm[m];
-                                html += renderModeCard(m, entry);
-                            });
-                            html += '</div></div>';
-
-                            html += '<div class="mb-3">';
-                            html += '<div class="d-flex align-items-center gap-2 mb-4">';
-                            html += '<i class="bi bi-people-fill text-light fs-4"></i>';
-                            html += '<h4 class="mb-0 text-light fw-bold">TPP (Tercera Persona)</h4>';
-                            html += '</div>';
-                            html += '<div class="row g-4">';
-                            var tppModes = ['solo', 'duo', 'squad'];
-                            tppModes.forEach(function (m) {
-                                var entry = gm[m];
-                                html += renderModeCard(m, entry);
-                            });
-                            html += '</div></div>';
-
-                            document.getElementById('modesContainer').innerHTML = html;
-                            document.getElementById('lifetimeContent').style.display = '';
-                        } catch (ex) {
-                            document.getElementById('lifetimeError').classList.remove('d-none');
-                            document.getElementById('lifetimeError').textContent = 'Error procesando la respuesta.';
-                            console.error(ex);
-                        }
-                    })
-                    .catch(function (err) {
-                        document.getElementById('lifetimeError').classList.remove('d-none');
-                        document.getElementById('lifetimeError').textContent = 'Error al obtener datos: ' + (err.message || err);
-                        console.error(err);
-                    })
-                    .finally(function () {
-                        document.getElementById('lifetimeSpinner').style.display = 'none';
+                    var html = '';
+                    html += '<div class="mb-5">';
+                    html += '<div class="d-flex align-items-center gap-2 mb-4">';
+                    html += '<i class="bi bi-eye-fill text-light fs-4"></i>';
+                    html += '<h4 class="mb-0 text-light fw-bold">FPP (Primera Persona)</h4>';
+                    html += '</div>';
+                    html += '<div class="row g-4">';
+                    var fppModes = ['solo-fpp', 'duo-fpp', 'squad-fpp'];
+                    fppModes.forEach(function (m) {
+                        var entry = gm[m];
+                        html += renderModeCard(m, entry);
                     });
+                    html += '</div></div>';
+
+                    html += '<div class="mb-3">';
+                    html += '<div class="d-flex align-items-center gap-2 mb-4">';
+                    html += '<i class="bi bi-people-fill text-light fs-4"></i>';
+                    html += '<h4 class="mb-0 text-light fw-bold">TPP (Tercera Persona)</h4>';
+                    html += '</div>';
+                    html += '<div class="row g-4">';
+                    var tppModes = ['solo', 'duo', 'squad'];
+                    tppModes.forEach(function (m) {
+                        var entry = gm[m];
+                        html += renderModeCard(m, entry);
+                    });
+                    html += '</div></div>';
+
+                    var container = el('modesContainer');
+                    if (container) container.innerHTML = html;
+                } catch (ex) {
+                    console.error('Error parsing lifetime json', ex);
+                }
             }
 
-            // load on mount
-            document.addEventListener('DOMContentLoaded', loadStats);
+            function renderPositionChart(items) {
+                var canvas = el('positionChart');
+                if (!canvas) return;
+                var ctx = canvas.getContext('2d');
+                var ordered = (items || []).slice(0, 20).reverse();
+                var count = ordered.length;
+                var labels = ordered.map(function (_, i) { return (count - i).toString(); });
+
+                var positions = ordered.map(function (it) {
+                    return (it && (it.winPlace !== null && it.winPlace !== undefined)) ? Number(it.winPlace) : null;
+                });
+
+                var kills = ordered.map(function (it) { return it && it.kills != null ? it.kills : 0; });
+                var times = ordered.map(function (it) { return it && it.timeSurvived != null ? it.timeSurvived : null; });
+
+                var validPositions = positions.filter(function (v) { return v != null; });
+                var maxPlace = validPositions.length ? Math.max.apply(null, validPositions) : 20;
+                if (!isFinite(maxPlace) || maxPlace < 5) maxPlace = 20;
+                var minY = 1;
+                var maxY = Math.max(maxPlace, 5);
+
+                if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+                chartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Posición',
+                            data: positions,
+                            borderColor: 'rgba(200,200,185,0.95)',
+                            borderWidth: 1.8,
+                            backgroundColor: 'rgba(200,200,185,0.06)',
+                            pointBackgroundColor: 'rgba(240,240,230,0.95)',
+                            pointBorderColor: 'rgba(60,60,60,0.9)',
+                            pointRadius: 5,
+                            pointBorderWidth: 2,
+                            pointStyle: 'circle',
+                            showLine: true,
+                            tension: 0.32,
+                            fill: false,
+                            spanGaps: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                mode: 'nearest',
+                                intersect: true,
+                                callbacks: {
+                                    title: function (tooltipItems) {
+                                        var idx = tooltipItems[0].dataIndex;
+                                        return 'Partida ' + (labels[idx]) + (idx === labels.length - 1 ? ' (Reciente)' : '');
+                                    },
+                                    label: function (context) {
+                                        var idx = context.dataIndex;
+                                        var pos = context.formattedValue;
+                                        var k = kills[idx];
+                                        var t = times[idx];
+                                        var lines = [];
+                                        lines.push('Posición: ' + (pos == null ? '-' : pos));
+                                        lines.push('Kills: ' + (k != null ? k : 0));
+                                        lines.push('Tiempo: ' + (t != null ? formatDurationSecs(t) : '-'));
+                                        return lines;
+                                    }
+                                }
+                            }
+                        },
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' },
+                                ticks: { color: 'rgba(255,255,255,0.6)', maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }
+                            },
+                            y: {
+                                reverse: true,
+                                min: minY,
+                                max: maxY,
+                                ticks: { stepSize: 1, color: 'rgba(255,255,255,0.6)' },
+                                grid: { color: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.06)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                // Lifetime: serverLifetimeJson is either null or an object (injected via Raw)
+                if (serverLifetimeJson) {
+                    // serverLifetimeJson already an object
+                    renderModeCardsFromLifetime(serverLifetimeJson);
+                    show('lifetimeContent');
+                } else {
+                    // fallback: request lifetime via endpoint if server didn't supply it
+                    fetch('@Url.Action("PlayerLifetimeStats", "Stats")?playerId=' + encodeURIComponent('@playerId'), { method: 'GET' })
+                        .then(function (r) { if (!r.ok) return r.text().then(t => { throw new Error(t || r.statusText); }); return r.json(); })
+                        .then(function (resp) { if (resp) { renderModeCardsFromLifetime(resp); show('lifetimeContent'); } })
+                        .catch(function (err) { console.error(err); });
+                }
+
+                // Render chart
+                if (serverItems && serverItems.length > 0) {
+                    renderPositionChart(serverItems);
+                } else {
+                    fetch('@Url.Action("PlayerRecentGames", "Stats")?playerId=' + encodeURIComponent('@playerId'), { method: 'GET' })
+                        .then(function (r) { if (!r.ok) return r.text().then(t => { throw new Error(t || r.statusText); }); return r.json(); })
+                        .then(function (resp) { renderPositionChart(resp || []); })
+                        .catch(function (err) { console.error(err); });
+                }
+            });
         })();
     </script>
 }
