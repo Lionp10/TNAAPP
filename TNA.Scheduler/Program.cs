@@ -32,6 +32,7 @@ var host = Host.CreateDefaultBuilder(args)
         services.AddScoped<IMatchRepository, MatchRepository>();
         services.AddScoped<IPlayerMatchRepository, PlayerMatchRepository>();
         services.AddScoped<IPlayerLifetimeRepository, PlayerLifetimeRepository>();
+        services.AddScoped<IRecentGameStatsRepository, RecentGamesStatsRepository>();
 
         services.AddScoped<IClanService, ClanServcice>();
         services.AddScoped<IPubgService, PubgService>();
