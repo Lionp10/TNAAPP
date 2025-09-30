@@ -36,22 +36,13 @@
 @section Hero {
 
     <section class="container mt-4">
-        <div class="d-flex align-items-start justify-content-between mb-3">
-            <div class="hero-left">
-                <h1 class="mb-0 display-6 text-light">Estadísticas — @playerNick</h1>
-                <small class="text-muted">Lifetime y modos</small>
-            </div>
-            <div class="hero-right">
-                <a asp-controller="Home" asp-action="Members" class="btn btn-outline-light">Volver</a>
-            </div>
-        </div>
 
         <!-- Player hero pill -->
         <div class="mb-4">
             <div class="p-3 bg-secondary bg-opacity-25 rounded d-flex align-items-center gap-3">
                 <i class="bi bi-person-circle text-light fs-4"></i>
                 <div class="text-light">
-                    <small class="d-block text-muted">Jugador:</small>
+                    <small class="d-block text-muted-tna">Jugador:</small>
                     <strong class="fs-5">@playerNick</strong>
                 </div>
             </div>
@@ -84,7 +75,7 @@
                     <div class="d-flex align-items-center gap-3 py-3 border-bottom border-light border-opacity-10">
                         <div class="me-2 text-light fs-3"><i class="bi bi-flag"></i></div>
                         <div class="flex-grow-1">
-                            <small class="text-muted d-block">Posición promedio</small>
+                            <small class="text-muted-tna d-block">Posición promedio</small>
                             <div class="fw-bold text-warning fs-4">#@Math.Round(avgPosition)</div>
                         </div>
                     </div>
@@ -92,7 +83,7 @@
                     <div class="d-flex align-items-center gap-3 py-3 border-bottom border-light border-opacity-10">
                         <div class="me-2 text-light fs-3"><i class="bi bi-crosshair"></i></div>
                         <div class="flex-grow-1">
-                            <small class="text-muted d-block">Índice A/M</small>
+                            <small class="text-muted-tna d-block">Índice A/M</small>
                             <div class="fw-bold text-warning fs-4">@String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:0.00}", avgAssists)</div>
                         </div>
                     </div>
@@ -100,7 +91,7 @@
                     <div class="d-flex align-items-center gap-3 py-3">
                         <div class="me-2 text-light fs-3"><i class="bi bi-lightning"></i></div>
                         <div class="flex-grow-1">
-                            <small class="text-muted d-block">Daño promedio</small>
+                            <small class="text-muted-tna d-block">Daño promedio</small>
                             <div class="fw-bold text-warning fs-4">@String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:0.00}", avgDamage)</div>
                         </div>
                     </div>
