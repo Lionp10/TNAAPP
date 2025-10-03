@@ -113,6 +113,23 @@
         </div>
     </section>
 
+    <!-- Modal para mostrar estadísticas de una partida -->
+    <div class="modal fade modal-lg" id="gameStatsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title" id="gameStatsModalTitle">Informe de la partida</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="gameStatsContent">
+                        <!-- Se rellenará desde JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 }
 
 @section Scripts {
@@ -130,11 +147,52 @@
                 return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
             }
 
+            function formatDateOnly(s) {
+                if (!s) return '';
+                try {
+                    var d = new Date(s);
+                    if (isNaN(d.getTime())) return s;
+                    return d.toLocaleDateString('es-ES');
+                } catch (ex) {
+                    return s;
+                }
+            }
+
             // Helpers seguros
             function el(id) { return document.getElementById(id); }
             function setDisplay(id, value) { var e = el(id); if (e) e.style.display = value; }
             function show(id) { setDisplay(id, ''); }
             function hide(id) { setDisplay(id, 'none'); }
+
+            // Traduce matchType
+            function translateMatchType(mt) {
+                if (!mt) return '';
+                mt = mt.toLowerCase();
+                if (mt === 'official') return 'Normal';
+                if (mt === 'competitive') return 'Ranked';
+                if (mt === 'custom') return 'Custom';
+                return mt.charAt(0).toUpperCase() + mt.slice(1);
+            }
+
+            // Traduce nombres de mapa
+            function translateMapName(map) {
+                if (!map) return map || '-';
+                var m = map;
+                switch (m) {
+                    case 'Desert_Main': return 'Miramar';
+                    case 'Erangel_Main': return 'Erangel';
+                    case 'Savage_Main': return 'Sanhok';
+                    case 'DihorOtok_Main': return 'Vikendi';
+                    case 'Baltic_Main': return 'Erangel';
+                    case 'Summerland_Main': return 'Karakin';
+                    case 'Tiger_Main': return 'Taego';
+                    case 'Chimera_Main': return 'Paramo';
+                    case 'Heaven_Main': return 'Haven';
+                    case 'Kiki_Main': return 'Deston';
+                    case 'Neon_Main': return 'Rondo';
+                    default: return map;
+                }
+            }
 
             // Datos provistos por el servidor (MVC)
             var serverItems = @Html.Raw(serverRecentGamesJson);
@@ -142,10 +200,12 @@
             var serverLifetimeJson = @Html.Raw(serverLifetimeJsonForJs);
 
             var chartInstance = null;
+            var chartItems = []; // guardará la lista ordenada usada en el gráfico
+            var chartLabels = [];
 
             function renderModeCard(modeKey, data) {
                 if (!data) {
-                    return '<div class="col-12 col-md-4"><div class="glass-card p-4 text-center text-muted">No hay datos para ' + modeKey + '.</div></div>';
+                    return '<div class="col-12 col-md-4"><div class="glass-card p-4 text-center text-muted-tna">No hay datos para ' + modeKey + '.</div></div>';
                 }
 
                 var wins = data.wins ?? 0;
@@ -244,13 +304,156 @@
                 }
             }
 
+            function showGameModal(item, label) {
+                try {
+                    // Traducciones y valores seguros
+                    var pos = item && (item.winPlace !== null && item.winPlace !== undefined) ? item.winPlace : '-';
+                    var mapRaw = item && item.mapName ? item.mapName : '-';
+                    var map = translateMapName(mapRaw);
+                    var mt = item && item.matchType ? translateMatchType(item.matchType) : '';
+                    var mode = item && item.gameMode ? item.gameMode : '-';
+                    var createdRaw = item && item.createdAt ? item.createdAt : (item && item.dateOfUpdate ? item.dateOfUpdate : '');
+                    var created = formatDateOnly(createdRaw);
+                    var time = item && item.timeSurvived != null ? formatDurationSecs(item.timeSurvived) : '-';
+
+                    // Stats principales
+                    var kills = item && item.kills != null ? item.kills : 0;
+                    var dbnos = item && item.dbnos != null ? item.dbnos : 0;
+                    var assists = item && item.assists != null ? item.assists : 0;
+                    var damage = item && item.damageDealt != null ? Number(item.damageDealt).toLocaleString() : '-';
+                    var headshots = item && item.headshotsKills != null ? item.headshotsKills : 0;
+                    var revives = item && item.revives != null ? item.revives : 0;
+
+                    // Datos secundarios (agrupados)
+                    var killStreaks = item && item.killStreaks != null ? item.killStreaks : 0;
+                    var longestKill = item && item.longestKill != null ? (Number(item.longestKill).toFixed(2) + 'm') : '-';
+                    var killPlace = item && item.killPlace != null ? item.killPlace : '-';
+                    var roadKills = item && item.roadKills != null ? item.roadKills : 0;
+                    var teamKills = item && item.teamKills != null ? item.teamKills : 0;
+
+                    var rideDistance = item && item.rideDistance != null ? (Number(item.rideDistance).toFixed(0) + 'm') : '-';
+                    var swimDistance = item && item.swimDistance != null ? (Number(item.swimDistance).toFixed(0) + 'm') : '-';
+                    var walkDistance = item && item.walkDistance != null ? (Number(item.walkDistance).toFixed(0) + 'm') : '-';
+
+                    var boots = item && item.boots != null ? item.boots : 0;
+                    var heals = item && item.heals != null ? item.heals : 0;
+                    var weaponsAcquired = item && item.weaponsAcquired != null ? item.weaponsAcquired : 0;
+                    var vehicleDestroys = item && item.vehicleDestroys != null ? item.vehicleDestroys : 0;
+
+                    // Construcción HTML: sección superior destacada
+                    var html = '';
+                    html += '<div class="mb-3">';
+                    html += '<div class="d-flex align-items-center justify-content-between">';
+                    html += '<div class="d-flex align-items-center gap-3">';
+                    html += '<div class="text-warning fs-3 fw-bold">#' + pos + '</div>';
+                    html += '<div>';
+                    html += '<small class="text-muted-tna d-block">Mapa</small>';
+                    html += '<div class="fw-bold text-white fs-5">' + map + '</div>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '<div class="text-end">';
+
+                    html += '<div class="fw-bold text-white">' + (mode ? mode.toUpperCase() : '-') + ' | ' + (mt ? mt.toUpperCase() : '-') + '</div>';
+                    html += '<small class="text-muted-tna d-block mt-1"><span class="text-light">' + created + '</span></small>';
+                    html += '<small class="text-muted-tna d-block"><span class="text-light">' + time + '</span></small>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '</div>';
+
+                    // Estadísticas principales en tarjetas con iconos
+                    html += '<div class="row g-3 mb-3">';
+                    html += '<div class="col-6 col-md-4"><div class="p-3 bg-dark bg-opacity-75 rounded text-center border border-secondary border-opacity-25">';
+                    html += '<div class="d-flex justify-content-center align-items-center gap-2 mb-1"><i class="bi bi-crosshair text-info fs-5"></i><small class="text-muted-tna">Kills</small></div>';
+                    html += '<div class="fs-3 fw-bold text-white">' + kills + '</div></div></div>';
+
+                    html += '<div class="col-6 col-md-4"><div class="p-3 bg-dark bg-opacity-75 rounded text-center border border-secondary border-opacity-25">';
+                    html += '<div class="d-flex justify-content-center align-items-center gap-2 mb-1"><i class="bi bi-person-fill text-info fs-5"></i><small class="text-muted-tna">Derribos</small></div>';
+                    html += '<div class="fs-3 fw-bold text-white">' + dbnos + '</div></div></div>';
+
+                    html += '<div class="col-6 col-md-4"><div class="p-3 bg-dark bg-opacity-75 rounded text-center border border-secondary border-opacity-25">';
+                    html += '<div class="d-flex justify-content-center align-items-center gap-2 mb-1"><i class="bi bi-hand-thumbs-up text-info fs-5"></i><small class="text-muted-tna">Asistencias</small></div>';
+                    html += '<div class="fs-3 fw-bold text-white">' + assists + '</div></div></div>';
+
+                    html += '<div class="col-6 col-md-4"><div class="p-3 bg-dark bg-opacity-75 rounded text-center border border-secondary border-opacity-25">';
+                    html += '<div class="d-flex justify-content-center align-items-center gap-2 mb-1"><i class="bi bi-lightning text-info fs-5"></i><small class="text-muted-tna">Daño</small></div>';
+                    html += '<div class="fs-3 fw-bold text-white">' + damage + '</div></div></div>';
+
+                    html += '<div class="col-6 col-md-4"><div class="p-3 bg-dark bg-opacity-75 rounded text-center border border-secondary border-opacity-25">';
+                    html += '<div class="d-flex justify-content-center align-items-center gap-2 mb-1"><i class="bi bi-bullseye text-info fs-5"></i><small class="text-muted-tna">Headshots</small></div>';
+                    html += '<div class="fs-3 fw-bold text-white">' + headshots + '</div></div></div>';
+
+                    html += '<div class="col-6 col-md-4"><div class="p-3 bg-dark bg-opacity-75 rounded text-center border border-secondary border-opacity-25">';
+                    html += '<div class="d-flex justify-content-center align-items-center gap-2 mb-1"><i class="bi bi-heart-pulse text-info fs-5"></i><small class="text-muted-tna">Reanimaciones</small></div>';
+                    html += '<div class="fs-3 fw-bold text-white">' + revives + '</div></div></div>';
+                    html += '</div>';
+
+                    // Grupos secundarios: cuatro columnas lado a lado (Muertes | Despliegue | Salud | Otros)
+                    html += '<div class="row mt-2 small text-light gy-2">';
+
+                    // Muertes (col 1)
+                    html += '<div class="col-6 col-md-3">';
+                    html += '<h6 class="text-muted-tna">Muertes</h6>';
+                    html += '<div class="lh-sm">';
+                    html += '<div><strong>Racha:</strong> <span class="text-light">' + killStreaks + '</span></div>';
+                    html += '<div><strong>Mayor dist.:</strong> <span class="text-light">' + longestKill + '</span></div>';
+                    html += '<div><strong>Fuego amigo:</strong> <span class="text-light">' + teamKills + '</span></div>';
+                    html += '<div><strong>Atropellos:</strong> <span class="text-light">' + roadKills + '</span></div>';
+                    html += '<div><strong>KillPlace:</strong> <span class="text-light">' + killPlace + '</span></div>';
+                    html += '</div>';
+                    html += '</div>';
+
+                    // Despliegue (col 2)
+                    html += '<div class="col-6 col-md-3">';
+                    html += '<h6 class="text-muted-tna">Despliegue</h6>';
+                    html += '<div class="lh-sm">';
+                    html += '<div><strong>A pie:</strong> <span class="text-light">' + walkDistance + '</span></div>';
+                    html += '<div><strong>Vehículos:</strong> <span class="text-light">' + rideDistance + '</span></div>';
+                    html += '<div><strong>Nadando:</strong> <span class="text-light">' + swimDistance + '</span></div>';
+                    html += '</div>';
+                    html += '</div>';
+
+                    // Salud (col 3)
+                    html += '<div class="col-6 col-md-3">';
+                    html += '<h6 class="text-muted-tna">Salud</h6>';
+                    html += '<div class="lh-sm">';
+                    html += '<div><strong>Boosts:</strong> <span class="text-light">' + boots + '</span></div>';
+                    html += '<div><strong>Curaciones:</strong> <span class="text-light">' + heals + '</span></div>';
+                    html += '</div>';
+                    html += '</div>';
+
+                    // Otros (col 4)
+                    html += '<div class="col-6 col-md-3">';
+                    html += '<h6 class="text-muted-tna">Otros</h6>';
+                    html += '<div class="lh-sm">';
+                    html += '<div><strong>Armas:</strong> <span class="text-light">' + weaponsAcquired + '</span></div>';
+                    html += '<div><strong>Vehículos destr.:</strong> <span class="text-light">' + vehicleDestroys + '</span></div>';
+                    html += '</div>';
+                    html += '</div>';
+
+                    html += '</div>'; // end grupos secundarios
+
+                    var contentEl = el('gameStatsContent');
+                    if (contentEl) contentEl.innerHTML = html;
+
+                    var modalEl = el('gameStatsModal');
+                    if (modalEl) {
+                        var bsModal = new bootstrap.Modal(modalEl, { keyboard: true });
+                        bsModal.show();
+                    }
+                } catch (ex) {
+                    console.error('Error mostrando modal', ex);
+                }
+            }
+
             function renderPositionChart(items) {
                 var canvas = el('positionChart');
                 if (!canvas) return;
                 var ctx = canvas.getContext('2d');
                 var ordered = (items || []).slice(0, 20).reverse();
+                chartItems = ordered; // guardamos para usar en clicks
                 var count = ordered.length;
                 var labels = ordered.map(function (_, i) { return (count - i).toString(); });
+                chartLabels = labels;
 
                 var positions = ordered.map(function (it) {
                     return (it && (it.winPlace !== null && it.winPlace !== undefined)) ? Number(it.winPlace) : null;
@@ -264,6 +467,11 @@
                 if (!isFinite(maxPlace) || maxPlace < 5) maxPlace = 20;
                 var minY = 1;
                 var maxY = Math.max(maxPlace, 5);
+
+                // Configuración visual del punto (coincide con dataset)
+                var pointRadius = 5;
+                var pointBorderWidth = 2;
+                var extraPad = Math.ceil(pointRadius + pointBorderWidth + 8); // margen extra para que no se corten los puntos
 
                 if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
 
@@ -279,18 +487,22 @@
                             backgroundColor: 'rgba(200,200,185,0.06)',
                             pointBackgroundColor: 'rgba(240,240,230,0.95)',
                             pointBorderColor: 'rgba(60,60,60,0.9)',
-                            pointRadius: 5,
-                            pointBorderWidth: 2,
+                            pointRadius: pointRadius,
+                            pointBorderWidth: pointBorderWidth,
                             pointStyle: 'circle',
                             showLine: true,
                             tension: 0.32,
                             fill: false,
-                            spanGaps: true
+                            spanGaps: true,
+                            clip: false // permite dibujar puntos fuera del area de trazado sin recortarlos
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        layout: {
+                            padding: { top: extraPad, bottom: extraPad, left: 6, right: 6 }
+                        },
                         plugins: {
                             legend: { display: false },
                             tooltip: {
@@ -331,6 +543,19 @@
                         }
                     }
                 });
+
+                // Click handler: abre modal con datos de la partida
+                canvas.onclick = function (evt) {
+                    if (!chartInstance) return;
+                    var points = chartInstance.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
+                    if (points && points.length) {
+                        var p = points[0];
+                        var idx = p.index;
+                        var item = chartItems[idx];
+                        var label = labels[idx];
+                        showGameModal(item, label);
+                    }
+                };
             }
 
             document.addEventListener('DOMContentLoaded', function () {

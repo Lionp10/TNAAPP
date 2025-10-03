@@ -571,6 +571,17 @@ namespace TNA.BLL.Services.Implementations
                         ? gmEl.GetString() ?? string.Empty
                         : string.Empty;
 
+                    var matchType = matchAttributes.TryGetProperty("matchType", out var mtEl) && mtEl.ValueKind == JsonValueKind.String
+                        ? mtEl.GetString() ?? string.Empty
+                        : string.Empty;
+
+                    // NUEVA VALIDACIÓN: no grabar partidas de tipo "arcade"
+                    if (!string.IsNullOrEmpty(matchType) && string.Equals(matchType, "arcade", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.LogInformation("GetOrUpdateRecentGamesAsync: omitiendo match {MatchId} por ser tipo 'arcade'.", matchId);
+                        continue;
+                    }
+
                     var isCustom = matchAttributes.TryGetProperty("isCustomMatch", out var customEl) && customEl.ValueKind == JsonValueKind.True;
 
                     // Buscar participante correspondiente al playerId en included
@@ -595,6 +606,9 @@ namespace TNA.BLL.Services.Implementations
                                 continue;
 
                             var participantPlayerId = pIdEl.GetString()!;
+                            if (string.IsNullOrWhiteSpace(participantPlayerId))
+                                continue;
+
                             if (!string.Equals(participantPlayerId, playerId, StringComparison.OrdinalIgnoreCase))
                                 continue;
 
@@ -628,6 +642,7 @@ namespace TNA.BLL.Services.Implementations
                                 CreatedAt = createdAt,
                                 MapName = mapName,
                                 GameMode = gameMode,
+                                MatchType = matchType,
                                 IsCustomMatch = isCustom,
                                 DBNOs = dbnos,
                                 Assists = assists,
@@ -666,6 +681,7 @@ namespace TNA.BLL.Services.Implementations
                             CreatedAt = createdAt,
                             MapName = mapName,
                             GameMode = gameMode,
+                            MatchType = matchType,
                             IsCustomMatch = isCustom
                         };
                     }

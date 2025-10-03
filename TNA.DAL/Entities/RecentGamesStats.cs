@@ -18,6 +18,7 @@ namespace TNA.DAL.Entities
         public string CreatedAt { get; set; }
         public string MapName { get; set; }
         public string GameMode { get; set; }
+        public string MatchType { get; set; }
         public bool IsCustomMatch { get; set; }
 
         // Players Data
