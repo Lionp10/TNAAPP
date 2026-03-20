@@ -17,7 +17,7 @@ namespace TNA.Scheduler
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("DailyWorker started. Ejecutando actualización inmediatamente al arrancar.");
+            _logger.LogInformation("DailyWorker started. Ejecutando actualización inmediatamente al  arrancar.");
 
             if (stoppingToken.IsCancellationRequested)
             {

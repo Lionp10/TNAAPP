@@ -22,7 +22,7 @@ class Program
 
         if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(channelIdString))
         {
-            Console.WriteLine("❌ No se encontró DISCORD_TOKEN o DISCORD_CHANNEL_ID en variables de entorno.");
+            Console.WriteLine("❌ No se encontró DISCORD_TOKEN o DISCORD_CHANNEL_ID en  variables de entorno.");
             return;
         }
 

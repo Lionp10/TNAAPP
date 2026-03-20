@@ -10,5 +10,6 @@
         public int ClanMemberCount { get; set; } 
         public DateTime DateOfUpdate { get; set; } 
         public bool Enabled { get; set; } 
+
     }
 }
